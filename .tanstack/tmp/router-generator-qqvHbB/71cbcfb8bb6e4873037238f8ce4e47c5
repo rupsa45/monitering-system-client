@@ -1,0 +1,27 @@
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { useAuthStore } from '@/stores/authStore'
+
+export const Route = createFileRoute('/_authenticated/')({
+  beforeLoad: () => {
+    const { isAdmin, isEmployee, isAuthenticated } = useAuthStore.getState().auth
+    
+    if (!isAuthenticated()) {
+      throw redirect({
+        to: '/sign-in',
+      })
+    }
+    
+    // For now, just show a welcome message instead of redirecting
+    console.log('User authenticated:', { isAdmin: isAdmin(), isEmployee: isEmployee() })
+  },
+  component: () => (
+    <div className="flex items-center justify-center h-64">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold mb-4">Welcome to Employee Monitoring System</h1>
+        <p className="text-muted-foreground">
+          Please use the sidebar navigation to access your dashboard.
+        </p>
+      </div>
+    </div>
+  ),
+})
