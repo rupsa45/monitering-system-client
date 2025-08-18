@@ -18,7 +18,7 @@ interface CreateEmployeeFormProps {
 export function CreateEmployeeForm({ open, onOpenChange, onSuccess }: CreateEmployeeFormProps) {
   const { accessToken } = useAuth()
   const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState<CreateEmployeeData>({
+  const [formData, setFormData] = useState<Omit<CreateEmployeeData, 'empPhone'> & { empPhone: string }>({
     empName: '',
     empEmail: '',
     empPhone: '',
@@ -40,7 +40,14 @@ export function CreateEmployeeForm({ open, onOpenChange, onSuccess }: CreateEmpl
     if (!formData.empEmail.trim()) return 'Email is required'
     if (!formData.empPhone.trim()) return 'Phone number is required'
     if (!formData.empPassword) return 'Password is required'
-    if (formData.empPassword.length < 6) return 'Password must be at least 6 characters'
+    if (formData.empPassword.length < 8) return 'Password must be at least 8 characters'
+    
+    // Password complexity validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/
+    if (!passwordRegex.test(formData.empPassword)) {
+      return 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+    }
+    
     if (formData.empPassword !== formData.confirmPassword) return 'Passwords do not match'
     if (!formData.empTechnology.trim()) return 'Technology is required'
     if (!formData.empGender) return 'Gender is required'
@@ -51,7 +58,8 @@ export function CreateEmployeeForm({ open, onOpenChange, onSuccess }: CreateEmpl
     
     // Phone validation (basic)
     const phoneRegex = /^\d{10}$/
-    if (!phoneRegex.test(formData.empPhone.replace(/\D/g, ''))) return 'Please enter a valid 10-digit phone number'
+    const cleanPhone = formData.empPhone.replace(/\D/g, '')
+    if (!phoneRegex.test(cleanPhone)) return 'Please enter a valid 10-digit phone number'
     
     return null
   }
@@ -72,7 +80,12 @@ export function CreateEmployeeForm({ open, onOpenChange, onSuccess }: CreateEmpl
 
     setLoading(true)
     try {
-      const response = await EmployeeService.createEmployee(accessToken, formData)
+      // Convert phone to number for backend validation
+      const employeeData = {
+        ...formData,
+        empPhone: parseInt(formData.empPhone.replace(/\D/g, ''), 10)
+      }
+      const response = await EmployeeService.createEmployee(accessToken, employeeData)
       if (response.success) {
         toast.success('Employee created successfully!')
         onSuccess()
@@ -182,6 +195,9 @@ export function CreateEmployeeForm({ open, onOpenChange, onSuccess }: CreateEmpl
                 placeholder="Enter password"
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                Must contain at least 8 characters with uppercase, lowercase, number, and special character
+              </p>
             </div>
             
             <div className="space-y-2">
@@ -194,6 +210,9 @@ export function CreateEmployeeForm({ open, onOpenChange, onSuccess }: CreateEmpl
                 placeholder="Confirm password"
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                Must match the password above
+              </p>
             </div>
           </div>
 

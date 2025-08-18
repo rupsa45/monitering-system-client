@@ -12,12 +12,8 @@ import {
   Calendar, 
   CheckSquare, 
   Percent,
-  User,
-  Activity,
   TrendingUp,
-  Award,
-  IconClock as TablerClock,
-  IconClockOff
+  Award
 } from 'lucide-react'
 
 interface EmployeeStats {

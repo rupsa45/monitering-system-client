@@ -68,7 +68,7 @@ export default function LoginPage() {
           } else {
             // Fallback to login response data if profile fetch fails
             const user = {
-              id: result.user?.empId?.toString() || result.user?.id?.toString() || '',
+              id: result.user?.id?.toString() || '',
               empId: result.user?.empId?.toString() || result.user?.id?.toString() || '',
               empName: result.user?.empName || '',
               empEmail: result.user?.empEmail || data.empEmail,
@@ -87,7 +87,7 @@ export default function LoginPage() {
           console.error('Error fetching user profile:', profileError)
           // Fallback to login response data
           const user = {
-            id: result.user?.empId?.toString() || result.user?.id?.toString() || '',
+            id: result.user?.id?.toString() || '',
             empId: result.user?.empId?.toString() || result.user?.id?.toString() || '',
             empName: result.user?.empName || '',
             empEmail: result.user?.empEmail || data.empEmail,
@@ -106,7 +106,7 @@ export default function LoginPage() {
         toast.success(result.message || 'Login successful!')
         
         // Redirect to dashboard or intended page
-        const redirectTo = search.redirect || '/'
+        const redirectTo = search.redirect || '/dashboard'
         navigate({ to: redirectTo as any })
       } else {
         toast.error(result.message || 'Login failed')
@@ -222,14 +222,7 @@ export default function LoginPage() {
           
                      <CardFooter className="flex flex-col space-y-2">
              <p className="text-center text-xs text-muted-foreground">
-               By signing in, you agree to our{' '}
-               <Link to="/terms" className="hover:text-primary underline">
-                 Terms of Service
-               </Link>{' '}
-               and{' '}
-               <Link to="/privacy" className="hover:text-primary underline">
-                 Privacy Policy
-               </Link>
+               By signing in, you agree to our Terms of Service and Privacy Policy
              </p>
            </CardFooter>
         </Card>

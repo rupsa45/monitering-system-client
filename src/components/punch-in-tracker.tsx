@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Clock, Coffee, LogOut, Play, Pause, Square } from 'lucide-react'
+import { Clock, Coffee, Play, Square } from 'lucide-react'
 import { BarChart3 } from 'lucide-react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import {

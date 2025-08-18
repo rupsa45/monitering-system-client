@@ -3,7 +3,7 @@ import { API_CONFIG, API_ENDPOINTS } from '@/config/api'
 export interface CreateEmployeeData {
   empName: string
   empEmail: string
-  empPhone: string
+  empPhone: number
   empPassword: string
   confirmPassword: string
   empTechnology: string

@@ -1,6 +1,5 @@
 import { Link } from '@tanstack/react-router'
 import {
-  BadgeCheck,
   ChevronsUpDown,
   LogOut,
   User,
