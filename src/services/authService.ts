@@ -150,9 +150,9 @@ export class AuthService {
   }
 
   static getAuthHeaders(token?: string): Record<string, string> {
-    const headers: Record<string, string> = { ...API_CONFIG.headers }
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
+    const headers: Record<string, string> = { 
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` })
     }
     return headers
   }
