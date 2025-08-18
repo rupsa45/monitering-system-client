@@ -51,64 +51,86 @@ export default function LoginPage() {
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true)
-    
     try {
-      // Use AuthService for login
-      const result = await AuthService.login(data)
+      console.log('Attempting login with:', data.empEmail)
       
-      if (result.success) {
-        // Store authentication data
+      const result = await AuthService.login(data)
+      console.log('Login result:', result)
+      
+      if (result.success && result.accessToken) {
+        // Set access token
         auth.setAccessToken(result.accessToken)
+        console.log('Access token set successfully')
         
-        // Fetch complete user profile data
         try {
-          const profileResponse = await AuthService.getUserProfile(result.accessToken)
-          if (profileResponse.success && profileResponse.data) {
-            auth.setUser(profileResponse.data)
-          } else {
-            // Fallback to login response data if profile fetch fails
+          // Fetch user profile
+          const profileResult = await AuthService.getUserProfile(result.accessToken)
+          console.log('Profile result:', profileResult)
+          
+          if (profileResult.success && profileResult.data) {
             const user = {
-              id: result.user?.id?.toString() || '',
-              empId: result.user?.empId?.toString() || result.user?.id?.toString() || '',
-              empName: result.user?.empName || '',
-              empEmail: result.user?.empEmail || data.empEmail,
-              empPhone: result.user?.empPhone || '',
-              empRole: result.user?.empRole || 'employee',
-              empTechnology: result.user?.empTechnology || '',
-              empProfile: result.user?.empProfile || '',
-              empGender: result.user?.empGender || '',
-              isActive: result.user?.isActive !== undefined ? result.user.isActive : true,
-              createdAt: result.user?.createdAt || new Date().toISOString(),
-              updatedAt: result.user?.updatedAt || new Date().toISOString(),
+              id: profileResult.data.id,
+              empId: profileResult.data.empId.toString(),
+              empName: profileResult.data.empName,
+              empEmail: profileResult.data.empEmail,
+              empPhone: profileResult.data.empPhone,
+              empRole: profileResult.data.empRole,
+              empTechnology: profileResult.data.empTechnology,
+              empProfile: profileResult.data.empProfile,
+              empGender: profileResult.data.empGender,
+              isActive: profileResult.data.isActive,
+              createdAt: profileResult.data.createdAt,
+              updatedAt: profileResult.data.updatedAt,
             }
             auth.setUser(user)
+            console.log('User profile set successfully:', user)
           }
         } catch (profileError) {
           console.error('Error fetching user profile:', profileError)
           // Fallback to login response data
           const user = {
-            id: result.user?.id?.toString() || '',
-            empId: result.user?.empId?.toString() || result.user?.id?.toString() || '',
+            id: result.user?.empId?.toString() || '',
+            empId: result.user?.empId?.toString() || '',
             empName: result.user?.empName || '',
             empEmail: result.user?.empEmail || data.empEmail,
-            empPhone: result.user?.empPhone || '',
+            empPhone: '',
             empRole: result.user?.empRole || 'employee',
             empTechnology: result.user?.empTechnology || '',
-            empProfile: result.user?.empProfile || '',
+            empProfile: '',
             empGender: result.user?.empGender || '',
-            isActive: result.user?.isActive !== undefined ? result.user.isActive : true,
-            createdAt: result.user?.createdAt || new Date().toISOString(),
-            updatedAt: result.user?.updatedAt || new Date().toISOString(),
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           }
           auth.setUser(user)
+          console.log('Fallback user data set:', user)
         }
         
         toast.success(result.message || 'Login successful!')
         
-        // Redirect to dashboard or intended page
-        const redirectTo = search.redirect || '/dashboard'
-        navigate({ to: redirectTo as any })
+        // Debug logging
+        console.log('Login successful, user:', auth.user)
+        console.log('Access token set:', !!auth.accessToken)
+        console.log('Redirecting to:', search.redirect || '/')
+        
+        // Small delay to ensure state is updated
+        setTimeout(() => {
+          // Redirect based on user role
+          const userRole = auth.user?.empRole
+          let redirectTo = '/'
+          
+          if (userRole === 'admin') {
+            redirectTo = '/'
+          } else if (userRole === 'employee') {
+            // Employees will see access denied on dashboard, but still redirect there
+            redirectTo = '/'
+          }
+          
+          console.log('User role:', userRole, 'Navigating to:', redirectTo)
+          navigate({ to: redirectTo as any })
+        }, 100)
       } else {
+        console.error('Login failed:', result.message)
         toast.error(result.message || 'Login failed')
       }
     } catch (error) {

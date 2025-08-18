@@ -15,14 +15,18 @@ import {
   IconEye,
 } from '@tabler/icons-react'
 import { type SidebarData } from '../types'
+import { useAuthStore } from '@/stores/authStore'
 
 // This will be dynamically populated from the auth store
 export const getSidebarData = (): SidebarData => {
+  const { auth } = useAuthStore.getState()
+  const isAdmin = auth.user?.empRole === 'admin'
+  
   return {
     user: {
-      name: 'Loading...',
-      email: 'loading@example.com',
-      avatar: '/avatars/shadcn.jpg',
+      name: auth.user?.empName || 'Loading...',
+      email: auth.user?.empEmail || 'loading@example.com',
+      avatar: auth.user?.empProfile || '/avatars/shadcn.jpg',
     },
     navGroups: [
       {
@@ -30,7 +34,7 @@ export const getSidebarData = (): SidebarData => {
         items: [
           {
             title: 'Dashboard',
-            url: '/dashboard',
+            url: '/',
             icon: IconLayoutDashboard,
           },
           {

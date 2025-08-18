@@ -15,15 +15,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { state } = useSidebar()
   const { user } = useAuth()
   const isCollapsed = state === 'collapsed'
+  const isAdmin = user?.empRole === 'admin'
 
   // Get dynamic sidebar data
   const sidebarData = getSidebarData()
   
-  // Update user data with auth store data if available
+  // Filter navigation items based on user role
+  const filteredNavGroups = sidebarData.navGroups.map(group => {
+    if (group.title === 'Main') {
+      return {
+        ...group,
+        items: group.items.filter(item => {
+          // Show Dashboard and Employee Management only to admins
+          if (item.title === 'Dashboard' || item.title === 'Employee Management') {
+            return isAdmin
+          }
+          return true
+        })
+      }
+    }
+    return group
+  })
+  
+  // Use real-time user data from auth store
   const userData = {
-    name: user?.empName || sidebarData.user.name,
-    email: user?.empEmail || sidebarData.user.email,
-    avatar: user?.empProfile || sidebarData.user.avatar,
+    name: user?.empName || 'Loading...',
+    email: user?.empEmail || 'loading@example.com',
+    avatar: user?.empProfile || '/avatars/shadcn.jpg',
   }
 
   return (
@@ -48,7 +66,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {sidebarData.navGroups.map((props) => (
+        {filteredNavGroups.map((props) => (
           <NavGroup key={props.title} {...props} />
         ))}
       </SidebarContent>

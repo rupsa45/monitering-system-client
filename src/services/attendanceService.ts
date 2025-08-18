@@ -214,7 +214,23 @@ export class AttendanceService {
         throw new Error((await response.json()).message || 'Failed to fetch timesheets')
       }
       
-      return await response.json()
+      const result = await response.json()
+      console.log('AttendanceService getAllTimesheets - Raw API response:', result)
+      
+      // Map the API response to match the frontend interface
+      if (result.success) {
+        const mappedData = result.data || result.timeSheets || []
+        console.log('AttendanceService getAllTimesheets - Mapped data:', mappedData)
+        
+        return {
+          success: true,
+          message: result.message,
+          data: mappedData,
+          total: result.total || mappedData.length
+        }
+      }
+      
+      return result
     } catch (error) {
       console.error('AttendanceService getAllTimesheets error:', error)
       throw error
@@ -233,7 +249,29 @@ export class AttendanceService {
         throw new Error((await response.json()).message || 'Failed to fetch today summary')
       }
       
-      return await response.json()
+      const result = await response.json()
+      console.log('AttendanceService getTodaySummary - Raw API response:', result)
+      
+      // Map the API response to match the frontend interface
+      if (result.success && result.summary) {
+        const mappedData: AttendanceSummary = {
+          totalEmployees: result.summary.totalEmployees || 0,
+          presentToday: result.summary.present || 0,
+          absentToday: result.summary.absent || 0,
+          onBreak: result.summary.onBreak || 0,
+          averageWorkHours: result.summary.averageWorkHours || 0
+        }
+        
+        console.log('AttendanceService getTodaySummary - Mapped data:', mappedData)
+        
+        return {
+          success: true,
+          message: result.message,
+          data: mappedData
+        }
+      }
+      
+      return result
     } catch (error) {
       console.error('AttendanceService getTodaySummary error:', error)
       throw error
