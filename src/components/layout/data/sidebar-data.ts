@@ -70,6 +70,20 @@ export const getSidebarData = (): SidebarData => {
               },
             ],
           },
+          {
+            title: 'Leave Management',
+            icon: IconCalendarCheck,
+            items: [
+              ...(isAdmin ? [{
+                title: 'Admin Leave Management',
+                url: '/admin-leave-management',
+              }] : []),
+              ...(!isAdmin ? [{
+                title: 'My Leave Management',
+                url: '/employee-leave-management',
+              }] : []),
+            ],
+          },
         ],
       },
       {
