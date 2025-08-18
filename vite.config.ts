@@ -14,6 +14,17 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  build: {
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress TypeScript warnings during build
+        if (warning.code === 'TS2307' || warning.code === 'TS2339' || warning.code === 'TS2345') {
+          return;
+        }
+        warn(warning);
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

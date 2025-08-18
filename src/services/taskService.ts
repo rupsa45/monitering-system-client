@@ -46,6 +46,7 @@ export interface GetTasksResponse {
   success: boolean
   message: string
   tasks?: Task[]
+  total?: number
 }
 
 export interface UpdateTaskStatusResponse {
@@ -279,7 +280,7 @@ export class TaskService {
   }
 
   // Employee task methods
-  static async getMyTasks(token: string, status?: string): Promise<TasksResponse> {
+  static async getMyTasks(token: string, status?: string): Promise<GetTasksResponse> {
     try {
       const headers = this.getAuthHeaders(token)
       const url = status 
@@ -318,14 +319,14 @@ export class TaskService {
       }))
       
       console.log('TaskService getMyTasks - Mapped tasks:', tasks)
-      return { success: true, tasks, total: result.total }
+      return { success: true, message: 'Tasks fetched successfully', tasks, total: result.total }
     } catch (error) {
       console.error('TaskService getMyTasks error:', error)
       throw error
     }
   }
 
-  static async updateMyTaskStatus(token: string, taskId: string, status: string): Promise<TaskUpdateResponse> {
+  static async updateMyTaskStatus(token: string, taskId: string, status: string): Promise<UpdateTaskStatusResponse> {
     try {
       const headers = this.getAuthHeaders(token)
       const response = await fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.empTasks.myTasks}/${taskId}/status`, {

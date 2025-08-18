@@ -32,7 +32,7 @@ export default function UserAttendance() {
 
     try {
       setLoading(true)
-      const response = await AttendanceService.getCurrentStatus(accessToken, userId.toString())
+      const response = await AttendanceService.getCurrentStatus(accessToken, userId?.toString() || '0')
       if (response.success) {
         setCurrentStatus(response.data)
       }
@@ -53,7 +53,7 @@ export default function UserAttendance() {
 
     setActionLoading(true)
     try {
-      const response = await AttendanceService.clockIn(accessToken, userId.toString())
+      const response = await AttendanceService.clockIn(accessToken, userId?.toString() || '0')
       if (response.success) {
         toast.success(`Clocked in at ${AttendanceService.formatTime(response.clockInTime)}`)
         await fetchCurrentStatus()
@@ -77,7 +77,7 @@ export default function UserAttendance() {
 
     setActionLoading(true)
     try {
-      const response = await AttendanceService.clockOut(accessToken, userId.toString())
+      const response = await AttendanceService.clockOut(accessToken, userId?.toString() || null)
       if (response.success) {
         toast.success(`Clocked out at ${AttendanceService.formatTime(response.clockOutTime)} (${response.workHours} hours worked)`)
         await fetchCurrentStatus()

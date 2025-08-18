@@ -10,13 +10,11 @@ import { EmployeeService, Employee } from '@/services/employeeService'
 import { CreateEmployeeForm } from './components/create-employee-form'
 import { toast } from 'sonner'
 import { 
-  Users, 
   Plus, 
   Search, 
   Filter,
   MoreHorizontal,
   Edit,
-  Trash2,
   Eye,
   Loader2
 } from 'lucide-react'
@@ -29,6 +27,21 @@ export default function AdminEmployeeManagement() {
   const [showCreateForm, setShowCreateForm] = useState(false)
 
   // Check if user is admin
+  if (!user) {
+    return (
+      <Main>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-red-600 mb-2">User Not Found</h1>
+            <p className="text-muted-foreground">
+              Please log in to access this page.
+            </p>
+          </div>
+        </div>
+      </Main>
+    )
+  }
+
   if (user?.empRole !== 'admin') {
     return (
       <Main>
@@ -45,23 +58,31 @@ export default function AdminEmployeeManagement() {
   }
 
   useEffect(() => {
+    console.log('AdminEmployeeManagement useEffect - accessToken:', accessToken)
+    console.log('AdminEmployeeManagement useEffect - user:', user)
+    
     if (accessToken) {
       fetchEmployees()
+    } else {
+      console.log('No access token found, setting loading to false')
+      setLoading(false)
     }
   }, [accessToken])
 
   const fetchEmployees = async () => {
     try {
+      console.log('fetchEmployees - Starting to fetch employees')
       setLoading(true)
       const response = await EmployeeService.getAllEmployees(accessToken)
+      console.log('fetchEmployees - Response:', response)
       if (response.success) {
         setEmployees(response.data)
       } else {
         toast.error(response.message || 'Failed to load employees')
       }
     } catch (error) {
+      console.error('fetchEmployees - Error:', error)
       toast.error('Failed to load employees')
-      console.error('Error fetching employees:', error)
     } finally {
       setLoading(false)
     }
@@ -101,7 +122,7 @@ export default function AdminEmployeeManagement() {
               Manage your organization's employees and their information.
             </p>
           </div>
-          <Button>
+          <Button onClick={() => setShowCreateForm(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add Employee
           </Button>
@@ -188,6 +209,13 @@ export default function AdminEmployeeManagement() {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Create Employee Form */}
+      <CreateEmployeeForm
+        open={showCreateForm}
+        onOpenChange={setShowCreateForm}
+        onSuccess={handleEmployeeCreated}
+      />
     </Main>
   )
 }
