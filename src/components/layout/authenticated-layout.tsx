@@ -9,6 +9,7 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import SkipToMain from '@/components/skip-to-main'
+import { CommandMenu } from '@/components/command-menu'
 
 interface Props {
   children?: React.ReactNode
@@ -64,6 +65,7 @@ export function AuthenticatedLayout({ children }: Props) {
     <SearchProvider>
       <SidebarProvider defaultOpen={defaultOpen}>
         <AuthenticatedLayoutContent>{children}</AuthenticatedLayoutContent>
+        <CommandMenu />
       </SidebarProvider>
     </SearchProvider>
   )

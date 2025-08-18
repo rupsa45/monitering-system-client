@@ -122,7 +122,8 @@ export default function LoginPage() {
           if (userRole === 'admin') {
             redirectTo = '/'
           } else if (userRole === 'employee') {
-            redirectTo = '/employee-dashboard'
+            // Employees will see access denied on dashboard, but still redirect there
+            redirectTo = '/'
           }
           
           console.log('User role:', userRole, 'Navigating to:', redirectTo)

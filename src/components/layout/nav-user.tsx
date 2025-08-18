@@ -50,6 +50,8 @@ export function NavUser({
   const userAvatar = authUser?.empProfile || user.avatar
   const userRole = authUser?.empRole || 'User'
 
+
+
   // Generate initials from name
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase()

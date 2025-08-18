@@ -126,6 +126,7 @@ export default function EmployeeTasks() {
         <div className="text-center">
           <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
           <p className="text-muted-foreground">This page is only available for employees.</p>
+          <p className="text-sm text-muted-foreground mt-2">Current role: {user?.empRole || 'unknown'}</p>
         </div>
       </div>
     )
