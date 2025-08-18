@@ -1,9 +1,11 @@
 export const API_CONFIG = {
-  baseURL: 'https://employee-monitering-sys-api.onrender.com',
+  baseURL: 'http://localhost:9000',
   headers: {
     'Content-Type': 'application/json',
   },
 }
+
+export const API_BASE_URL = API_CONFIG.baseURL
 
 export const API_ENDPOINTS = {
   auth: {
@@ -61,6 +63,11 @@ export const API_ENDPOINTS = {
     myTasks: '/emp-tasks/my-tasks',
     myTaskStats: '/emp-tasks/my-task-stats',
   },
- 
+  screenshots: {
+    upload: '/screenshots/upload',
+    getAll: '/screenshots',
+    getEmployee: '/screenshots/employee',
+    delete: '/screenshots',
+  },
 }
 

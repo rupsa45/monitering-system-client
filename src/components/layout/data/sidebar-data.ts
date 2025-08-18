@@ -94,11 +94,11 @@ export const getSidebarData = (): SidebarData => {
             url: '/monitoring',
             icon: IconActivity,
           },
-          {
+          ...(isAdmin ? [{
             title: 'Screenshots',
             url: '/recordings',
             icon: IconEye,
-          },
+          }] : []),
         ],
       },
       {

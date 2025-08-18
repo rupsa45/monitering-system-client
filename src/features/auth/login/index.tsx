@@ -117,13 +117,13 @@ export default function LoginPage() {
         setTimeout(() => {
           // Redirect based on user role
           const userRole = auth.user?.empRole
-          let redirectTo = '/'
+          let redirectTo = '/user-attendance'
           
           if (userRole === 'admin') {
             redirectTo = '/'
           } else if (userRole === 'employee') {
-            // Employees will see access denied on dashboard, but still redirect there
-            redirectTo = '/'
+            // Employees should go to their own dashboard
+            redirectTo = '/admin-employee-management'
           }
           
           console.log('User role:', userRole, 'Navigating to:', redirectTo)
