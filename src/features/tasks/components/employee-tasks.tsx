@@ -52,7 +52,7 @@ export default function EmployeeTasks() {
       const response = await TaskService.getMyTasks(accessToken, filterStatus)
       console.log('EmployeeTasks - Tasks API response:', response)
       if (response.success) {
-        setTasks(response.tasks)
+        setTasks(response.tasks || [])
         console.log('EmployeeTasks - Set tasks:', response.tasks)
       } else {
         toast.error('Failed to fetch tasks')

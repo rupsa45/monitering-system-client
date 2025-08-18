@@ -17,11 +17,11 @@ import {
 } from 'lucide-react'
 
 interface EmployeeStats {
-  totalTimeSheets: number
-  totalLeaves: number
-  totalTasks: number
-  completedTasks: number
-  completionRate: number
+  totalTimeSheets?: number
+  totalLeaves?: number
+  totalTasks?: number
+  completedTasks?: number
+  completionRate?: number
 }
 
 interface EmployeeProfile {
@@ -141,8 +141,8 @@ export default function EmployeeDashboard() {
 
   const getClockButtonIcon = () => {
     if (clockLoading) return <Clock className="h-6 w-6 mb-2 animate-spin" />
-    if (!timesheetStatus?.isClockedIn) return <TablerClock className="h-6 w-6 mb-2" />
-    if (!timesheetStatus?.isClockedOut) return <IconClockOff className="h-6 w-6 mb-2" />
+    if (!timesheetStatus?.isClockedIn) return <Clock className="h-6 w-6 mb-2" />
+    if (!timesheetStatus?.isClockedOut) return <Clock className="h-6 w-6 mb-2" />
     return <Clock className="h-6 w-6 mb-2" />
   }
 

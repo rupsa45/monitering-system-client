@@ -46,6 +46,7 @@ export interface GetTasksResponse {
   success: boolean
   message: string
   tasks?: Task[]
+  total?: number
 }
 
 export interface UpdateTaskStatusResponse {
@@ -318,7 +319,7 @@ export class TaskService {
       }))
       
       console.log('TaskService getMyTasks - Mapped tasks:', tasks)
-      return { success: true, tasks, total: result.total }
+      return { success: true, message: 'Tasks fetched successfully', tasks, total: result.total }
     } catch (error) {
       console.error('TaskService getMyTasks error:', error)
       throw error
