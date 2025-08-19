@@ -87,8 +87,30 @@ export interface EmployeeWorkingListResponse {
 }
 
 export class AuthService {
+  static async checkApiHealth(): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_CONFIG.baseURL}/health`, {
+        method: 'GET',
+        headers: API_CONFIG.headers,
+      })
+      return response.ok
+    } catch (error) {
+      console.error('API health check failed:', error)
+      return false
+    }
+  }
+
   static async login(credentials: LoginCredentials): Promise<LoginResponse> {
     try {
+      console.log('AuthService - Attempting login with URL:', `${API_CONFIG.baseURL}${API_ENDPOINTS.auth.employeeLogin}`)
+      console.log('AuthService - Login credentials:', { email: credentials.empEmail, password: '***' })
+      
+      // Check API health first
+      const isApiHealthy = await this.checkApiHealth()
+      if (!isApiHealthy) {
+        throw new Error('API server is not responding. Please check if the backend server is running.')
+      }
+      
       // Try employee login first
       let response = await fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.auth.employeeLogin}`, {
         method: 'POST',
@@ -116,6 +138,17 @@ export class AuthService {
       return response.json()
     } catch (error) {
       console.error('AuthService login error:', error)
+      console.error('AuthService - Full error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        type: error instanceof Error ? error.constructor.name : typeof error
+      })
+      
+      // Provide more specific error messages
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        throw new Error('Cannot connect to the server. Please check if the API server is running on http://localhost:9000')
+      }
+      
       if (error instanceof Error) {
         throw error
       }
