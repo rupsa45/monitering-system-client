@@ -130,6 +130,7 @@ export const API_ENDPOINTS = {
     getAll: '/screenshots',
     getEmployee: '/screenshots/employee',
     delete: '/screenshots',
+    download: '/screenshots/download',
   },
   monitoring: {
     realtime: '/monitoring/realtime',
