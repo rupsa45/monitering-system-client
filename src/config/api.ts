@@ -83,6 +83,7 @@ export const API_ENDPOINTS = {
     empLeavePermit: '/admin/empLeavePermit',
     empDashboard: '/admin/empDashBoard',
     dashboardOverview: '/admin/dashboard/overview',
+    dashboardPerformance: '/admin/dashboard/performance',
     dashboardAttendance: '/admin/dashboard/attendance',
     dashboardTasks: '/admin/dashboard/tasks',
     profile: '/admin/profile',

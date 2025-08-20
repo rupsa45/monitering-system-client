@@ -110,12 +110,6 @@ export function NavUser({
                   Profile
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to='/settings/account'>
-                  <Settings className='mr-2 h-4 w-4' />
-                  Account Settings
-                </Link>
-              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>

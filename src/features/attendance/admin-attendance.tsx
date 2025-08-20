@@ -45,8 +45,11 @@ export default function AdminAttendance() {
   const fetchTodaySummary = async () => {
     try {
       setSummaryLoading(true)
+      console.log('AdminAttendance fetchTodaySummary - Calling API...')
       const response = await AttendanceService.getTodaySummary(accessToken)
+      console.log('AdminAttendance fetchTodaySummary - API response:', response)
       if (response.success) {
+        console.log('AdminAttendance fetchTodaySummary - Setting summary data:', response.data)
         setSummary(response.data)
       }
     } catch (error) {
@@ -111,12 +114,14 @@ export default function AdminAttendance() {
   }
 
   const getEmployeeStatus = (timesheet: EmployeeTimesheet) => {
-    if (timesheet.clockOut) {
+    if (!timesheet.clockIn) {
+      return <Badge variant="outline" className="text-red-600 border-red-600">Absent</Badge>
+    } else if (timesheet.clockOut) {
       return <Badge variant="secondary">Completed</Badge>
     } else if (timesheet.breakStart && !timesheet.breakEnd) {
       return <Badge variant="outline" className="text-orange-600 border-orange-600">On Break</Badge>
     } else if (timesheet.clockIn) {
-      return <Badge variant="default">Working</Badge>
+      return <Badge variant="default" className="text-green-600">Working</Badge>
     } else {
       return <Badge variant="outline">Not Started</Badge>
     }
@@ -168,6 +173,11 @@ export default function AdminAttendance() {
     )
   }
 
+  // Debug logging
+  console.log('AdminAttendance render - Summary state:', summary)
+  console.log('AdminAttendance render - presentToday:', summary?.presentToday)
+  console.log('AdminAttendance render - absentToday:', summary?.absentToday)
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -192,7 +202,7 @@ export default function AdminAttendance() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
@@ -214,11 +224,14 @@ export default function AdminAttendance() {
             <div className="text-2xl font-bold text-green-600">
               {summaryLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : summary?.presentToday || 0}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Clocked in today
+            </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-2 pb-2">
             <CardTitle className="text-sm font-medium">Absent Today</CardTitle>
             <UserX className="h-4 w-4 text-red-600" />
           </CardHeader>
@@ -226,10 +239,13 @@ export default function AdminAttendance() {
             <div className="text-2xl font-bold text-red-600">
               {summaryLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : summary?.absentToday || 0}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Not clocked in today
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
+        {/* <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">On Break</CardTitle>
             <Coffee className="h-4 w-4 text-orange-600" />
@@ -239,7 +255,7 @@ export default function AdminAttendance() {
               {summaryLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : summary?.onBreak || 0}
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -249,6 +265,18 @@ export default function AdminAttendance() {
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
               {summaryLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : (summary?.averageWorkHours || 0).toFixed(1)}h
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Work Hours</CardTitle>
+            <Clock className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600">
+              {summaryLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : (summary?.totalWorkHours || 0).toFixed(1)}h
             </div>
           </CardContent>
         </Card>

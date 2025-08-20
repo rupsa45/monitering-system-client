@@ -194,8 +194,9 @@ export default function AdminTimesheetAnalytics() {
     dateWiseHistory.forEach(dateData => {
       dateData.employees.forEach(emp => {
         allEmployees.add(emp.empId)
-        if (emp.status === 'PRESENT') presentEmployees++
-        if (emp.status === 'ABSENT') absentEmployees++
+        // Only count as present if they have actually clocked in
+        if (emp.hasTimesheet && emp.clockIn) presentEmployees++
+        if (!emp.hasTimesheet || !emp.clockIn) absentEmployees++
         if (emp.status === 'LATE') lateEmployees++
         totalWorkHours += emp.hoursLoggedIn || 0
       })
@@ -204,8 +205,9 @@ export default function AdminTimesheetAnalytics() {
   } else {
     // Calculate from regular timesheets
     totalEmployees = timesheets.length
-    presentEmployees = timesheets.filter(t => t.status === 'PRESENT').length
-    absentEmployees = timesheets.filter(t => t.status === 'ABSENT').length
+    // Only count as present if they have actually clocked in
+    presentEmployees = timesheets.filter(t => t.clockIn).length
+    absentEmployees = timesheets.filter(t => !t.clockIn).length
     lateEmployees = timesheets.filter(t => t.status === 'LATE').length
     totalWorkHours = timesheets.reduce((total, t) => {
       const hours = t.hoursLoggedIn || 0
@@ -306,7 +308,7 @@ export default function AdminTimesheetAnalytics() {
              <div className="text-2xl font-bold">
                {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : presentEmployees}
              </div>
-             <p className="text-xs mt-1">Employees present</p>
+             <p className="text-xs mt-1">Employees clocked in</p>
            </CardContent>
          </Card>
 
@@ -319,7 +321,7 @@ export default function AdminTimesheetAnalytics() {
              <div className="text-2xl font-bold">
                {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : absentEmployees}
              </div>
-             <p className="text-xs mt-1">Employees absent</p>
+             <p className="text-xs mt-1">Employees not clocked in</p>
            </CardContent>
          </Card>
 

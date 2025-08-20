@@ -68,9 +68,9 @@ export function ProfileDropdown() {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link to='/settings/account'>
-              Account
-              <DropdownMenuShortcut>⌘A</DropdownMenuShortcut>
+            <Link to='/settings'>
+              Profile
+              <DropdownMenuShortcut>⌘</DropdownMenuShortcut>
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>

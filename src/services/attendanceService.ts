@@ -37,6 +37,7 @@ export interface AttendanceSummary {
   absentToday: number
   onBreak: number
   averageWorkHours: number
+  totalWorkHours: number
 }
 
 export interface ClockInResponse {
@@ -313,18 +314,22 @@ export class AttendanceService {
       
       const result = await response.json()
       console.log('AttendanceService getTodaySummary - Raw API response:', result)
+      console.log('AttendanceService getTodaySummary - Summary object:', result.summary)
       
       // Map the API response to match the frontend interface
       if (result.success && result.summary) {
         const mappedData: AttendanceSummary = {
           totalEmployees: result.summary.totalEmployees || 0,
-          presentToday: result.summary.present || 0,
-          absentToday: result.summary.absent || 0,
+          presentToday: result.summary.presentToday || 0,
+          absentToday: result.summary.absentToday || 0,
           onBreak: result.summary.onBreak || 0,
-          averageWorkHours: result.summary.averageWorkHours || 0
+          averageWorkHours: result.summary.averageWorkHours || 0,
+          totalWorkHours: result.summary.totalWorkHours || 0
         }
         
         console.log('AttendanceService getTodaySummary - Mapped data:', mappedData)
+        console.log('AttendanceService getTodaySummary - presentToday:', mappedData.presentToday)
+        console.log('AttendanceService getTodaySummary - absentToday:', mappedData.absentToday)
         
         return {
           success: true,

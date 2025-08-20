@@ -99,11 +99,7 @@ export const getSidebarData = (): SidebarData => {
           url: '/settings',
           icon: IconUserCog,
         },
-        {
-          title: 'Account',
-          url: '/settings/account',
-          icon: IconSettings,
-        },
+       
         {
           title: 'Appearance',
           url: '/settings/appearance',
@@ -174,11 +170,7 @@ export const getSidebarData = (): SidebarData => {
           url: '/settings',
           icon: IconUserCog,
         },
-        {
-          title: 'Account',
-          url: '/settings/account',
-          icon: IconSettings,
-        },
+       
         {
           title: 'Appearance',
           url: '/settings/appearance',
