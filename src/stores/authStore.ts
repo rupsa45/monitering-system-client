@@ -45,10 +45,24 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>()((set) => {
-  const cookieState = Cookies.get(ACCESS_TOKEN)
-  const userDataState = Cookies.get(USER_DATA)
-  const initToken = cookieState ? JSON.parse(cookieState) : ''
-  const initUser = userDataState ? JSON.parse(userDataState) : null
+  let cookieState: string | undefined
+  let userDataState: string | undefined
+  let initToken = ''
+  let initUser = null
+  
+  try {
+    cookieState = Cookies.get(ACCESS_TOKEN)
+    userDataState = Cookies.get(USER_DATA)
+    initToken = cookieState ? JSON.parse(cookieState) : ''
+    initUser = userDataState ? JSON.parse(userDataState) : null
+  } catch (error) {
+    console.error('Error initializing auth store:', error)
+    // Clear corrupted cookies
+    Cookies.remove(ACCESS_TOKEN)
+    Cookies.remove(USER_DATA)
+    initToken = ''
+    initUser = null
+  }
   
   return {
     auth: {
@@ -77,6 +91,17 @@ export const useAuthStore = create<AuthState>()((set) => {
         set((state) => {
           Cookies.remove(ACCESS_TOKEN)
           Cookies.remove(USER_DATA)
+          
+          // Clear Electron session if available
+          if ((window as any).electronAPI?.clearSession) {
+            try {
+              (window as any).electronAPI.clearSession()
+              console.log('Electron session cleared on logout')
+            } catch (error) {
+              console.error('Error clearing Electron session:', error)
+            }
+          }
+          
           return {
             ...state,
             auth: { ...state.auth, user: null, accessToken: '' },
@@ -87,17 +112,33 @@ export const useAuthStore = create<AuthState>()((set) => {
 })
 
 export const useAuth = () => {
-  const auth = useAuthStore((state) => state.auth)
-  return {
-    user: auth.user,
-    reset: auth.reset,
-    setUser: auth.setUser,
-    accessToken: auth.accessToken,
-    setAccessToken: auth.setAccessToken,
-    resetAccessToken: auth.resetAccessToken,
-    isAuthenticated: () => !!auth.accessToken,
-    isAdmin: () => auth.user?.empRole === 'admin',
-    isEmployee: () => auth.user?.empRole === 'employee'
+  try {
+    const auth = useAuthStore((state) => state.auth)
+    return {
+      user: auth.user,
+      reset: auth.reset,
+      setUser: auth.setUser,
+      accessToken: auth.accessToken,
+      setAccessToken: auth.setAccessToken,
+      resetAccessToken: auth.resetAccessToken,
+      isAuthenticated: () => !!auth.accessToken,
+      isAdmin: () => auth.user?.empRole === 'admin',
+      isEmployee: () => auth.user?.empRole === 'employee'
+    }
+  } catch (error) {
+    console.error('Error in useAuth hook:', error)
+    // Return default values if store is not available
+    return {
+      user: null,
+      reset: () => {},
+      setUser: () => {},
+      accessToken: '',
+      setAccessToken: () => {},
+      resetAccessToken: () => {},
+      isAuthenticated: () => false,
+      isAdmin: () => false,
+      isEmployee: () => false
+    }
   }
 }
 

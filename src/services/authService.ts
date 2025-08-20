@@ -120,8 +120,13 @@ export class AuthService {
 
       if (response.ok) {
         const result = await response.json()
+        console.log('AuthService - Employee login successful:', result)
         return result
       }
+
+      // Get employee login error details
+      const employeeError = await response.json()
+      console.log('AuthService - Employee login failed:', employeeError)
 
       // If employee login fails, try admin login
       response = await fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.auth.adminLogin}`, {
@@ -130,12 +135,28 @@ export class AuthService {
         body: JSON.stringify(credentials),
       })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Login failed')
+      if (response.ok) {
+        const result = await response.json()
+        console.log('AuthService - Admin login successful:', result)
+        return result
       }
 
-      return response.json()
+      // Get admin login error details
+      const adminError = await response.json()
+      console.log('AuthService - Admin login failed:', adminError)
+
+      // Provide more specific error message based on what failed
+      if (employeeError.message === 'Employee not found' && adminError.message === 'Admin not found') {
+        throw new Error('User not found. Please check your email address.')
+      } else if (employeeError.message === 'Invalid password' && adminError.message === 'Invalid password') {
+        throw new Error('Invalid password. Please check your password.')
+      } else if (employeeError.message === 'Employee not found') {
+        throw new Error('Employee not found. Please check your email address.')
+      } else if (adminError.message === 'Admin not found') {
+        throw new Error('Admin not found. Please check your email address.')
+      } else {
+        throw new Error(employeeError.message || adminError.message || 'Login failed')
+      }
     } catch (error) {
       console.error('AuthService login error:', error)
       console.error('AuthService - Full error details:', {

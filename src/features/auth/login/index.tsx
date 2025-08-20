@@ -62,6 +62,27 @@ export default function LoginPage() {
         auth.setAccessToken(result.accessToken)
         console.log('Access token set successfully')
         
+        // Send session data to Electron app if available
+        if ((window as any).electronAPI?.setSession) {
+          try {
+            const sessionData = {
+              user: {
+                id: result.user?.empId?.toString() || '',
+                empId: result.user?.empId?.toString() || '',
+                empName: result.user?.empName || '',
+                empEmail: result.user?.empEmail || data.empEmail,
+                empRole: result.user?.empRole || 'employee',
+                empTechnology: result.user?.empTechnology || '',
+                accessToken: result.accessToken // Include the access token
+              }
+            }
+            await (window as any).electronAPI.setSession(sessionData)
+            console.log('Session data sent to Electron app')
+          } catch (electronError) {
+            console.error('Error sending session to Electron:', electronError)
+          }
+        }
+        
         try {
           // Fetch user profile
           const profileResult = await AuthService.getUserProfile(result.accessToken)
@@ -84,6 +105,22 @@ export default function LoginPage() {
             }
             auth.setUser(user)
             console.log('User profile set successfully:', user)
+            
+            // Update Electron session with complete user data
+            if ((window as any).electronAPI?.setSession) {
+              try {
+                const updatedSessionData = {
+                  user: {
+                    ...user,
+                    accessToken: result.accessToken
+                  }
+                }
+                await (window as any).electronAPI.setSession(updatedSessionData)
+                console.log('Updated session data sent to Electron app')
+              } catch (electronError) {
+                console.error('Error updating session in Electron:', electronError)
+              }
+            }
           }
         } catch (profileError) {
           console.error('Error fetching user profile:', profileError)
@@ -113,20 +150,22 @@ export default function LoginPage() {
         console.log('Access token set:', !!auth.accessToken)
         console.log('Redirecting to:', search.redirect || '/')
         
-        // Small delay to ensure state is updated
+        // Redirect based on user role
+        const userRole = auth.user?.empRole
+        let redirectTo = '/user-attendance'
+        
+        if (userRole === 'admin') {
+          redirectTo = '/'
+        } else if (userRole === 'employee') {
+          // Employees should go to their employee dashboard
+          redirectTo = '/employee-dashboard'
+        }
+        
+        console.log('User role:', userRole, 'Navigating to:', redirectTo)
+        
+        // Use router navigation with a small delay to ensure auth state is updated
+        console.log('Attempting navigation to:', redirectTo)
         setTimeout(() => {
-          // Redirect based on user role
-          const userRole = auth.user?.empRole
-          let redirectTo = '/user-attendance'
-          
-          if (userRole === 'admin') {
-            redirectTo = '/'
-          } else if (userRole === 'employee') {
-            // Employees should go to their employee dashboard
-            redirectTo = '/employee-dashboard'
-          }
-          
-          console.log('User role:', userRole, 'Navigating to:', redirectTo)
           navigate({ to: redirectTo as any })
         }, 100)
       } else {

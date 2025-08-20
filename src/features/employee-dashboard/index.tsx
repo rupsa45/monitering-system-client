@@ -41,6 +41,18 @@ export default function EmployeeDashboard() {
   const [timesheetStatus, setTimesheetStatus] = useState<TimesheetStatus | null>(null)
   const [clockLoading, setClockLoading] = useState(false)
 
+  // Add a check to ensure auth state is properly loaded
+  if (!accessToken || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
   useEffect(() => {
     fetchEmployeeProfile()
     fetchTimesheetStatus()

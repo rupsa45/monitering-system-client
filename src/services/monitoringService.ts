@@ -194,6 +194,19 @@ class MonitoringService {
     }
   }
 
+  // Get current attendance status for all employees
+  async getCurrentAttendanceStatus(): Promise<any[]> {
+    try {
+      console.log('Fetching current attendance status');
+      const response = await api.get(API_ENDPOINTS.adminTimesheet.todaySummary);
+      console.log('Current attendance status response:', response.data);
+      return response.data.summary?.timeSheets || [];
+    } catch (error) {
+      console.error('Error fetching current attendance status:', error);
+      return [];
+    }
+  }
+
   // Get monitoring summary for dashboard
   async getMonitoringSummary(date?: string): Promise<MonitoringSummary> {
     try {
