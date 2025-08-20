@@ -14,23 +14,15 @@ export const Route = createFileRoute('/')({
         to: '/login',
       })
     }
+    
+    // If user is not admin, redirect to employee dashboard
+    if (auth.user?.empRole !== 'admin') {
+      throw redirect({
+        to: '/employee-dashboard',
+      })
+    }
   },
   component: () => {
-    const { user } = useAuth()
-    
-    // If user is not admin, show denied message
-    if (user?.empRole !== 'admin') {
-      return (
-        <AuthenticatedLayout>
-          <AccessDenied 
-            title="Dashboard Access Denied"
-            message="This dashboard is only available for administrators."
-          />
-        </AuthenticatedLayout>
-      )
-    }
-    
-    // Show admin dashboard for admin users
     return (
       <AuthenticatedLayout>
         <Dashboard />

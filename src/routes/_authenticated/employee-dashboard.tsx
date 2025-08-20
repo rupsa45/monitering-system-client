@@ -15,7 +15,7 @@ export const Route = createFileRoute('/_authenticated/employee-dashboard')({
     
     if (!isEmployee()) {
       throw redirect({
-        to: '/admin-dashboard',
+        to: '/',
       })
     }
   },
