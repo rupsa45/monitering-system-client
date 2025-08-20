@@ -2,192 +2,127 @@
   "conversations": [
     {
       "id": "conv1",
-      "profile": "https://randomuser.me/api/portraits/men/32.jpg",
-      "username": "alex_dev",
-      "fullName": "Alex John",
-      "title": "Senior Backend Dev",
+      "profile": "/images/avatars/avatar-1.svg",
+      "username": "john.doe",
+      "fullName": "John Doe",
+      "title": "Software Engineer",
       "messages": [
         {
-          "sender": "You",
-          "message": "See you later, Alex!",
-          "timestamp": "2024-08-24T11:15:15"
-        },
-        {
-          "sender": "Alex",
-          "message": "Alright, talk to you later!",
-          "timestamp": "2024-08-24T11:11:30"
+          "sender": "John",
+          "message": "Hey! How's the project going?",
+          "timestamp": "2024-08-22T10:30:00"
         },
         {
           "sender": "You",
-          "message": "For sure. Anyway, I should get back to reviewing the project.",
-          "timestamp": "2024-08-23T09:26:50"
+          "message": "Great! Almost done with the new feature.",
+          "timestamp": "2024-08-22T10:35:00"
         },
         {
-          "sender": "Alex",
-          "message": "Yeah, let me know what you think.",
-          "timestamp": "2024-08-23T09:25:15"
-        },
-        {
-          "sender": "You",
-          "message": "Oh, nice! I've been waiting for that. I'll check it out later.",
-          "timestamp": "2024-08-23T09:24:30"
-        },
-        {
-          "sender": "Alex",
-          "message": "They've added a dark mode option! It looks really sleek.",
-          "timestamp": "2024-08-23T09:23:10"
-        },
-        {
-          "sender": "You",
-          "message": "No, not yet. What's new?",
-          "timestamp": "2024-08-23T09:22:00"
-        },
-        {
-          "sender": "Alex",
-          "message": "By the way, have you seen the new feature update?",
-          "timestamp": "2024-08-23T09:21:05"
-        },
-        {
-          "sender": "You",
-          "message": "Will do! Thanks, Alex.",
-          "timestamp": "2024-08-23T09:20:10"
-        },
-        {
-          "sender": "Alex",
-          "message": "Great! Let me know if you need any help.",
-          "timestamp": "2024-08-23T09:19:20"
-        },
-        {
-          "sender": "You",
-          "message": "Almost done. Just need to review a few things.",
-          "timestamp": "2024-08-23T09:18:45"
-        },
-        {
-          "sender": "Alex",
-          "message": "I'm good, thanks! Did you finish the project?",
-          "timestamp": "2024-08-23T09:17:10"
-        },
-        {
-          "sender": "You",
-          "message": "Hey Alex, I'm doing well! How about you?",
-          "timestamp": "2024-08-23T09:16:30"
-        },
-        {
-          "sender": "Alex",
-          "message": "Hey Bob, how are you doing?",
-          "timestamp": "2024-08-23T09:15:00"
+          "sender": "John",
+          "message": "Perfect! Can't wait to see it.",
+          "timestamp": "2024-08-22T10:40:00"
         }
       ]
     },
     {
       "id": "conv2",
-      "profile": "https://randomuser.me/api/portraits/women/45.jpg",
-      "username": "taylor.codes",
-      "fullName": "Taylor Grande",
-      "title": "Tech Lead",
+      "profile": "/images/avatars/avatar-2.svg",
+      "username": "sarah.manager",
+      "fullName": "Sarah Johnson",
+      "title": "Project Manager",
       "messages": [
         {
-          "sender": "Taylor",
-          "message": "Yeah, it's really well-explained. You should give it a try.",
-          "timestamp": "2024-08-23T10:35:00"
+          "sender": "Sarah",
+          "message": "The client loved the demo!",
+          "timestamp": "2024-08-22T11:15:00"
         },
         {
           "sender": "You",
-          "message": "Not yet, is it good?",
-          "timestamp": "2024-08-23T10:32:00"
+          "message": "That's fantastic news!",
+          "timestamp": "2024-08-22T11:20:00"
         },
         {
-          "sender": "Taylor",
-          "message": "Hey, did you check out that new tutorial?",
-          "timestamp": "2024-08-23T10:30:00"
+          "sender": "Sarah",
+          "message": "We should schedule a follow-up meeting.",
+          "timestamp": "2024-08-22T11:25:00"
         }
       ]
     },
     {
       "id": "conv3",
-      "profile": "https://randomuser.me/api/portraits/men/54.jpg",
-      "username": "john_stack",
-      "fullName": "John Doe",
-      "title": "QA",
+      "profile": "/images/avatars/avatar-3.svg",
+      "username": "mike.dev",
+      "fullName": "Mike Chen",
+      "title": "Backend Developer",
       "messages": [
         {
-          "sender": "You",
-          "message": "Yep, see ya. 👋🏼",
-          "timestamp": "2024-08-22T18:59:00"
-        },
-        {
-          "sender": "John",
-          "message": "Great, see you then!",
-          "timestamp": "2024-08-22T18:55:00"
+          "sender": "Mike",
+          "message": "The API is ready for testing.",
+          "timestamp": "2024-08-22T12:00:00"
         },
         {
           "sender": "You",
-          "message": "Yes, same time as usual. I'll send the invite shortly.",
-          "timestamp": "2024-08-22T18:50:00"
+          "message": "Awesome! I'll test it right away.",
+          "timestamp": "2024-08-22T12:05:00"
         },
         {
-          "sender": "John",
-          "message": "Are we still on for the meeting tomorrow?",
-          "timestamp": "2024-08-22T18:45:00"
+          "sender": "Mike",
+          "message": "Let me know if you find any issues.",
+          "timestamp": "2024-08-22T12:10:00"
         }
       ]
     },
     {
       "id": "conv4",
-      "profile": "https://randomuser.me/api/portraits/women/29.jpg",
-      "username": "megan_frontend",
-      "fullName": "Megan Flux",
-      "title": "Jr Developer",
+      "profile": "/images/avatars/avatar-4.svg",
+      "username": "emma.design",
+      "fullName": "Emma Davis",
+      "title": "UI/UX Designer",
       "messages": [
         {
-          "sender": "You",
-          "message": "Sure ✌🏼",
-          "timestamp": "2024-08-23T11:30:00"
-        },
-        {
-          "sender": "Megan",
-          "message": "Thanks, appreciate it!",
-          "timestamp": "2024-08-23T11:30:00"
+          "sender": "Emma",
+          "message": "I've updated the design mockups.",
+          "timestamp": "2024-08-22T13:30:00"
         },
         {
           "sender": "You",
-          "message": "Sure thing! I'll take a look in the next hour.",
-          "timestamp": "2024-08-23T11:25:00"
+          "message": "The new design looks amazing!",
+          "timestamp": "2024-08-22T13:35:00"
         },
         {
-          "sender": "Megan",
-          "message": "Hey! Do you have time to review my PR today?",
-          "timestamp": "2024-08-23T11:20:00"
+          "sender": "Emma",
+          "message": "Thanks! I think it will work much better.",
+          "timestamp": "2024-08-22T13:40:00"
         }
       ]
     },
     {
       "id": "conv5",
-      "profile": "https://randomuser.me/api/portraits/men/72.jpg",
-      "username": "dev_david",
-      "fullName": "David Brown",
-      "title": "Senior UI/UX Designer",
+      "profile": "/images/avatars/avatar-5.svg",
+      "username": "alex.qa",
+      "fullName": "Alex Thompson",
+      "title": "QA Engineer",
       "messages": [
         {
+          "sender": "Alex",
+          "message": "Found a few bugs in the latest build.",
+          "timestamp": "2024-08-22T14:20:00"
+        },
+        {
           "sender": "You",
-          "message": "Great, I'll review them now!",
-          "timestamp": "2024-08-23T12:00:00"
+          "message": "Can you send me the details?",
+          "timestamp": "2024-08-22T14:25:00"
         },
         {
-          "sender": "David",
-          "message": "Just sent you the files. Let me know if you need any changes.",
-          "timestamp": "2024-08-23T11:58:00"
-        },
-        {
-          "sender": "David",
-          "message": "I finished the design for the dashboard. Thoughts?",
-          "timestamp": "2024-08-23T11:55:00"
+          "sender": "Alex",
+          "message": "Sure, I'll create tickets for them.",
+          "timestamp": "2024-08-22T14:30:00"
         }
       ]
     },
     {
       "id": "conv6",
-      "profile": "https://randomuser.me/api/portraits/women/68.jpg",
+      "profile": "/images/avatars/avatar-6.svg",
       "username": "julia.design",
       "fullName": "Julia Carter",
       "title": "Product Designer",
@@ -211,7 +146,7 @@
     },
     {
       "id": "conv7",
-      "profile": "https://randomuser.me/api/portraits/men/24.jpg",
+      "profile": "/images/avatars/avatar-7.svg",
       "username": "brad_dev",
       "fullName": "Brad Wilson",
       "title": "CEO",
@@ -235,7 +170,7 @@
     },
     {
       "id": "conv8",
-      "profile": "https://randomuser.me/api/portraits/women/34.jpg",
+      "profile": "/images/avatars/avatar-8.svg",
       "username": "katie_ui",
       "fullName": "Katie Lee",
       "title": "QA",
@@ -259,7 +194,7 @@
     },
     {
       "id": "conv9",
-      "profile": "https://randomuser.me/api/portraits/men/67.jpg",
+      "profile": "/images/avatars/avatar-9.svg",
       "username": "matt_fullstack",
       "fullName": "Matt Green",
       "title": "Full-stack Dev",
@@ -283,25 +218,25 @@
     },
     {
       "id": "conv10",
-      "profile": "https://randomuser.me/api/portraits/women/56.jpg",
-      "username": "sophie_dev",
-      "fullName": "Sophie Alex",
-      "title": "Jr. Frontend Dev",
+      "profile": "/images/avatars/avatar-10.svg",
+      "username": "lisa.marketing",
+      "fullName": "Lisa Rodriguez",
+      "title": "Marketing Manager",
       "messages": [
         {
+          "sender": "Lisa",
+          "message": "The campaign is performing well!",
+          "timestamp": "2024-08-23T11:30:00"
+        },
+        {
           "sender": "You",
-          "message": "Thanks! I'll review your code and get back to you.",
-          "timestamp": "2024-08-23T16:10:00"
+          "message": "That's great to hear!",
+          "timestamp": "2024-08-23T11:35:00"
         },
         {
-          "sender": "Sophie",
-          "message": "Let me know if you need anything else.",
-          "timestamp": "2024-08-23T16:05:00"
-        },
-        {
-          "sender": "Sophie",
-          "message": "The feature is implemented. Can you review it?",
-          "timestamp": "2024-08-23T16:00:00"
+          "sender": "Lisa",
+          "message": "We should plan the next phase.",
+          "timestamp": "2024-08-23T11:40:00"
         }
       ]
     }
