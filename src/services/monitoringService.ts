@@ -1,4 +1,4 @@
-import { api } from '@/config/api';
+import { api, API_ENDPOINTS } from '@/config/api';
 
 export interface Screenshot {
   id: string;
@@ -66,16 +66,14 @@ export interface EmployeeMonitoringData {
 }
 
 class MonitoringService {
-  private baseUrl = '/api';
-
   // Get all screenshots for a specific date
   async getScreenshots(date?: string): Promise<Screenshot[]> {
     try {
       console.log('Fetching screenshots with date:', date);
       const params = date ? `?date=${date}` : '';
-      const response = await api.get(`${this.baseUrl}/screenshots${params}`);
+      const response = await api.get(`${API_ENDPOINTS.screenshots.getAll}${params}`);
       console.log('Screenshots response:', response.data);
-      return response.data.data?.screenshots || [];
+      return response.data.data?.screenshots || response.data.screenshots || [];
     } catch (error) {
       console.error('Error fetching screenshots:', error);
       if (error.response?.status === 401) {
@@ -90,9 +88,9 @@ class MonitoringService {
     try {
       console.log('Fetching employee screenshots for:', employeeId, 'date:', date);
       const params = date ? `?date=${date}` : '';
-      const response = await api.get(`${this.baseUrl}/screenshots/employee/${employeeId}${params}`);
+      const response = await api.get(`${API_ENDPOINTS.screenshots.getEmployee}/${employeeId}${params}`);
       console.log('Employee screenshots response:', response.data);
-      return response.data.data?.screenshots || [];
+      return response.data.data?.screenshots || response.data.screenshots || [];
     } catch (error) {
       console.error('Error fetching employee screenshots:', error);
       throw error;
@@ -104,9 +102,9 @@ class MonitoringService {
     try {
       console.log('Fetching app usage summary with date:', date);
       const params = date ? `?date=${date}` : '';
-      const response = await api.get(`${this.baseUrl}/agent-working-apps/summary${params}`);
+      const response = await api.get(`${API_ENDPOINTS.agentWorkingApps.summary}${params}`);
       console.log('App usage summary response:', response.data);
-      return response.data.data || [];
+      return response.data.data || response.data || [];
     } catch (error) {
       console.error('Error fetching app usage summary:', error);
       throw error;
@@ -118,9 +116,9 @@ class MonitoringService {
     try {
       console.log('Fetching employee app usage for:', employeeId, 'date:', date);
       const params = date ? `?date=${date}` : '';
-      const response = await api.get(`${this.baseUrl}/agent-working-apps/employee/${employeeId}${params}`);
+      const response = await api.get(`${API_ENDPOINTS.agentWorkingApps.employee}/${employeeId}${params}`);
       console.log('Employee app usage response:', response.data);
-      return response.data.data || [];
+      return response.data.data || response.data || [];
     } catch (error) {
       console.error('Error fetching employee app usage:', error);
       throw error;
@@ -132,9 +130,9 @@ class MonitoringService {
     try {
       console.log('Fetching idle time summary with date:', date);
       const params = date ? `?date=${date}` : '';
-      const response = await api.get(`${this.baseUrl}/agent-idle-time/summary${params}`);
+      const response = await api.get(`${API_ENDPOINTS.agentIdleTime.summary}${params}`);
       console.log('Idle time summary response:', response.data);
-      return response.data.data || [];
+      return response.data.data || response.data || [];
     } catch (error) {
       console.error('Error fetching idle time summary:', error);
       throw error;
@@ -146,9 +144,9 @@ class MonitoringService {
     try {
       console.log('Fetching employee idle time for:', employeeId, 'date:', date);
       const params = date ? `?date=${date}` : '';
-      const response = await api.get(`${this.baseUrl}/agent-idle-time/employee/${employeeId}${params}`);
+      const response = await api.get(`${API_ENDPOINTS.agentIdleTime.employee}/${employeeId}${params}`);
       console.log('Employee idle time response:', response.data);
-      return response.data.data || [];
+      return response.data.data || response.data || [];
     } catch (error) {
       console.error('Error fetching employee idle time:', error);
       throw error;
@@ -238,7 +236,7 @@ class MonitoringService {
   // Get real-time monitoring data (for live dashboard)
   async getRealTimeMonitoringData(): Promise<any> {
     try {
-      const response = await api.get(`${this.baseUrl}/monitoring/realtime`);
+      const response = await api.get(API_ENDPOINTS.monitoring.realtime);
       return response.data.data || {};
     } catch (error) {
       console.error('Error fetching real-time monitoring data:', error);
@@ -249,7 +247,7 @@ class MonitoringService {
   // Download screenshot
   async downloadScreenshot(screenshotId: string): Promise<Blob> {
     try {
-      const response = await api.get(`${this.baseUrl}/screenshots/download/${screenshotId}`, {
+      const response = await api.get(`${API_ENDPOINTS.screenshots.getAll}/download/${screenshotId}`, {
         responseType: 'blob'
       });
       return response.data;
@@ -262,7 +260,7 @@ class MonitoringService {
   // Delete screenshot
   async deleteScreenshot(screenshotId: string): Promise<void> {
     try {
-      await api.delete(`${this.baseUrl}/screenshots/${screenshotId}`);
+      await api.delete(`${API_ENDPOINTS.screenshots.delete}/${screenshotId}`);
     } catch (error) {
       console.error('Error deleting screenshot:', error);
       throw error;
@@ -272,7 +270,7 @@ class MonitoringService {
   // Export monitoring data
   async exportMonitoringData(employeeId: string, startDate: string, endDate: string, format: 'csv' | 'pdf' = 'csv'): Promise<Blob> {
     try {
-      const response = await api.get(`${this.baseUrl}/monitoring/export`, {
+      const response = await api.get(API_ENDPOINTS.monitoring.export, {
         params: {
           employeeId,
           startDate,
@@ -291,7 +289,7 @@ class MonitoringService {
   // Get monitoring settings
   async getMonitoringSettings(): Promise<any> {
     try {
-      const response = await api.get(`${this.baseUrl}/monitoring/settings`);
+      const response = await api.get(API_ENDPOINTS.monitoring.settings);
       return response.data.data || {};
     } catch (error) {
       console.error('Error fetching monitoring settings:', error);
@@ -302,7 +300,7 @@ class MonitoringService {
   // Update monitoring settings
   async updateMonitoringSettings(settings: any): Promise<void> {
     try {
-      await api.put(`${this.baseUrl}/monitoring/settings`, settings);
+      await api.put(API_ENDPOINTS.monitoring.settings, settings);
     } catch (error) {
       console.error('Error updating monitoring settings:', error);
       throw error;

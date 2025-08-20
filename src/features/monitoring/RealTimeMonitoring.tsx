@@ -34,6 +34,7 @@ import monitoringService, {
   EmployeeMonitoringData 
 } from '@/services/monitoringService';
 import debugAuth from '@/utils/debugAuth';
+import { toast } from 'sonner';
 
 interface EmployeeStatus {
   id: string;
@@ -64,11 +65,15 @@ export default function RealTimeMonitoring() {
   const [appUsage, setAppUsage] = useState<AppUsage[]>([]);
   const [idleTime, setIdleTime] = useState<IdleTime[]>([]);
   const [debugMode, setDebugMode] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch monitoring data
   const fetchMonitoringData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      console.log('🔄 Fetching monitoring data for date:', selectedDate);
       
       // Run debug if in debug mode
       if (debugMode) {
@@ -76,17 +81,35 @@ export default function RealTimeMonitoring() {
         await debugAuth.runFullDebug();
       }
       
+      // Fetch all monitoring data in parallel
       const [summaryData, screenshotsData, appUsageSummary, idleTimeSummary] = await Promise.all([
-        monitoringService.getMonitoringSummary(selectedDate),
-        monitoringService.getScreenshots(selectedDate),
-        monitoringService.getAppUsageSummary(selectedDate),
-        monitoringService.getIdleTimeSummary(selectedDate)
+        monitoringService.getMonitoringSummary(selectedDate).catch(err => {
+          console.error('Error fetching summary:', err);
+          return null;
+        }),
+        monitoringService.getScreenshots(selectedDate).catch(err => {
+          console.error('Error fetching screenshots:', err);
+          return [];
+        }),
+        monitoringService.getAppUsageSummary(selectedDate).catch(err => {
+          console.error('Error fetching app usage:', err);
+          return [];
+        }),
+        monitoringService.getIdleTimeSummary(selectedDate).catch(err => {
+          console.error('Error fetching idle time:', err);
+          return [];
+        })
       ]);
+
+      console.log('📊 Summary data:', summaryData);
+      console.log('📸 Screenshots data:', screenshotsData);
+      console.log('💻 App usage data:', appUsageSummary);
+      console.log('⏰ Idle time data:', idleTimeSummary);
 
       setSummary(summaryData);
       setScreenshots(screenshotsData);
 
-      // Process employee data
+      // Process employee data from app usage
       const employeeStatuses: EmployeeStatus[] = appUsageSummary.map((emp: any) => {
         const employee = emp.employee;
         const totalActivity = emp.totalKeysPressed + emp.totalMouseClicks;
@@ -99,79 +122,56 @@ export default function RealTimeMonitoring() {
           else if (productivity > 20) status = 'away';
           else status = 'break';
         }
-
+        
         return {
-          id: employee.id,
-          name: employee.empName,
-          email: employee.empEmail,
+          id: employee?.id || 'unknown',
+          name: employee?.empName || 'Unknown Employee',
+          email: employee?.empEmail || 'unknown@example.com',
           status,
-          initials: employee.empName.split(' ').map(n => n[0]).join('').toUpperCase(),
+          initials: employee?.empName?.split(' ').map(n => n[0]).join('').toUpperCase() || 'UN',
           lastActivity: new Date().toISOString(),
-          productivity,
-          currentApp: emp.mostUsedApp || 'Unknown'
+          currentApp: 'Unknown App',
+          productivity
         };
       });
 
+      // If no app usage data, create placeholder employees
+      if (employeeStatuses.length === 0) {
+        console.log('⚠️ No app usage data found, creating placeholder employees');
+        employeeStatuses.push({
+          id: 'placeholder-1',
+          name: 'No Activity Data',
+          email: 'No employees with activity data found',
+          status: 'offline',
+          initials: 'NA',
+          lastActivity: new Date().toISOString(),
+          currentApp: 'No data',
+          productivity: 0
+        });
+      }
+
       setEmployees(employeeStatuses);
-      setAppUsage(appUsageSummary);
-      setIdleTime(idleTimeSummary);
 
     } catch (error) {
-      console.error('Error fetching monitoring data:', error);
-      // If there's an authentication error, run debug automatically
-      if (error.response?.status === 401) {
-        console.log('🔍 Authentication error detected - Running debug automatically');
-        await debugAuth.runFullDebug();
-      }
+      console.error('❌ Error fetching monitoring data:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch monitoring data');
+      toast.error('Failed to fetch monitoring data');
     } finally {
       setLoading(false);
     }
   };
 
-  // Auto-refresh data every 30 seconds
-  useEffect(() => {
-    fetchMonitoringData();
-    const interval = setInterval(fetchMonitoringData, 30000);
-    return () => clearInterval(interval);
-  }, [selectedDate, debugMode]);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge className='bg-green-500 hover:bg-green-600'>Active</Badge>;
-      case 'break':
-        return <Badge className='bg-orange-500 hover:bg-orange-600'>On Break</Badge>;
-      case 'offline':
-        return <Badge variant='destructive'>Offline</Badge>;
-      case 'away':
-        return <Badge variant='secondary'>Away</Badge>;
-      default:
-        return <Badge variant='secondary'>{status}</Badge>;
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <IconUsers className='h-4 w-4' />;
-      case 'break':
-        return <IconCoffee className='h-4 w-4' />;
-      case 'offline':
-        return <IconUserOff className='h-4 w-4' />;
-      case 'away':
-        return <IconClock className='h-4 w-4' />;
-      default:
-        return <IconUsers className='h-4 w-4' />;
-    }
-  };
-
+  // Filter employees based on search and status filters
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          employee.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
     const matchesStatus = filters[employee.status];
+    
     return matchesSearch && matchesStatus;
   });
 
+  // Handle filter changes
   const handleFilterChange = (status: keyof typeof filters) => {
     setFilters(prev => ({
       ...prev,
@@ -179,16 +179,34 @@ export default function RealTimeMonitoring() {
     }));
   };
 
+  // Clear all filters
   const clearFilters = () => {
     setFilters({
-      active: false,
-      break: false,
-      offline: false,
-      away: false
+      active: true,
+      break: true,
+      offline: true,
+      away: true
     });
   };
 
-  const handleDownloadScreenshot = async (screenshotId: string) => {
+  // Get status badge component
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge className='bg-green-500 hover:bg-green-600'>Active</Badge>
+      case 'break':
+        return <Badge className='bg-orange-500 hover:bg-orange-600'>On Break</Badge>
+      case 'offline':
+        return <Badge variant='destructive'>Offline</Badge>
+      case 'away':
+        return <Badge variant='secondary'>Away</Badge>
+      default:
+        return <Badge variant='secondary'>{status}</Badge>
+    }
+  };
+
+  // Download screenshot
+  const downloadScreenshot = async (screenshotId: string) => {
     try {
       const blob = await monitoringService.downloadScreenshot(screenshotId);
       const url = window.URL.createObjectURL(blob);
@@ -201,6 +219,7 @@ export default function RealTimeMonitoring() {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Error downloading screenshot:', error);
+      toast.error('Failed to download screenshot');
     }
   };
 
@@ -213,6 +232,38 @@ export default function RealTimeMonitoring() {
     console.log('🔍 Manual Debug Triggered');
     await debugAuth.runFullDebug();
   };
+
+  // Test API endpoints manually
+  const testAPIs = async () => {
+    console.log('🧪 Testing API endpoints...');
+    
+    try {
+      // Test screenshots API
+      console.log('📸 Testing screenshots API...');
+      const screenshots = await monitoringService.getScreenshots(selectedDate);
+      console.log('Screenshots result:', screenshots);
+      
+      // Test app usage API
+      console.log('💻 Testing app usage API...');
+      const appUsage = await monitoringService.getAppUsageSummary(selectedDate);
+      console.log('App usage result:', appUsage);
+      
+      // Test idle time API
+      console.log('⏰ Testing idle time API...');
+      const idleTime = await monitoringService.getIdleTimeSummary(selectedDate);
+      console.log('Idle time result:', idleTime);
+      
+      toast.success('API tests completed! Check console for results.');
+    } catch (error) {
+      console.error('❌ API test failed:', error);
+      toast.error('API test failed! Check console for details.');
+    }
+  };
+
+  // Fetch data on component mount and date change
+  useEffect(() => {
+    fetchMonitoringData();
+  }, [selectedDate]);
 
   if (loading) {
     return (
@@ -254,9 +305,14 @@ export default function RealTimeMonitoring() {
             <IconBug className="h-4 w-4" />
           </Button>
           {debugMode && (
-            <Button onClick={runDebugNow} variant="outline" size="sm">
-              Run Debug
-            </Button>
+            <>
+              <Button onClick={runDebugNow} variant="outline" size="sm">
+                Run Debug
+              </Button>
+              <Button onClick={testAPIs} variant="outline" size="sm">
+                Test APIs
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -271,6 +327,17 @@ export default function RealTimeMonitoring() {
           <p className="text-sm text-yellow-700 mt-1">
             Authentication and API requests are being logged to the console. Check the browser console for detailed information.
           </p>
+        </div>
+      )}
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <IconBug className="h-5 w-5 text-red-600" />
+            <span className="font-medium text-red-800">Error Loading Data</span>
+          </div>
+          <p className="text-sm text-red-700 mt-1">{error}</p>
         </div>
       )}
 
