@@ -22,9 +22,11 @@ import {
   TrendingUp,
   Activity
 } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
 
 export default function AdminAttendance() {
   const { accessToken, isAdmin } = useAuth()
+  const navigate = useNavigate()
   const [timesheets, setTimesheets] = useState<EmployeeTimesheet[]>([])
   const [summary, setSummary] = useState<AttendanceSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -118,6 +120,41 @@ export default function AdminAttendance() {
     } else {
       return <Badge variant="outline">Not Started</Badge>
     }
+  }
+
+  const calculateWorkingHours = (timesheet: EmployeeTimesheet): string => {
+    if (!timesheet.clockIn) return 'N/A'
+    
+    if (!timesheet.clockOut) {
+      // If not clocked out, calculate hours from clock in to now
+      const clockInTime = new Date(timesheet.clockIn)
+      const now = new Date()
+      const diffMs = now.getTime() - clockInTime.getTime()
+      const diffHours = diffMs / (1000 * 60 * 60)
+      
+      // Subtract break time if any
+      const breakTimeHours = (timesheet.totalBreakTime || 0) / 60
+      const actualWorkHours = Math.max(0, diffHours - breakTimeHours)
+      
+      return `${actualWorkHours.toFixed(2)}h (ongoing)`
+    }
+    
+    // If clocked out, use the calculated hours from API or calculate manually
+    if (timesheet.hoursLoggedIn && timesheet.hoursLoggedIn > 0) {
+      return `${timesheet.hoursLoggedIn.toFixed(2)}h`
+    }
+    
+    // Manual calculation if API doesn't provide hours
+    const clockInTime = new Date(timesheet.clockIn)
+    const clockOutTime = new Date(timesheet.clockOut)
+    const diffMs = clockOutTime.getTime() - clockInTime.getTime()
+    const diffHours = diffMs / (1000 * 60 * 60)
+    
+    // Subtract break time
+    const breakTimeHours = (timesheet.totalBreakTime || 0) / 60
+    const actualWorkHours = Math.max(0, diffHours - breakTimeHours)
+    
+    return `${actualWorkHours.toFixed(2)}h`
   }
 
   if (!isAdmin()) {
@@ -326,8 +363,8 @@ export default function AdminAttendance() {
                       <td className="p-4">
                         {AttendanceService.formatTime(timesheet.clockOut)}
                       </td>
-                      <td className="p-4">
-                        {timesheet.hoursLoggedIn ? `${timesheet.hoursLoggedIn}h` : 'N/A'}
+                      <td className="p-4 font-medium">
+                        {calculateWorkingHours(timesheet)}
                       </td>
                       <td className="p-4">
                         {timesheet.totalBreakTime ? `${timesheet.totalBreakTime}m` : '0m'}
@@ -344,29 +381,7 @@ export default function AdminAttendance() {
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common administrative actions</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" onClick={handleRefresh} disabled={loading}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh Data
-            </Button>
-            <Button variant="outline" onClick={() => toast.info('Export feature coming soon!')}>
-              <Download className="mr-2 h-4 w-4" />
-              Export Report
-            </Button>
-            <Button variant="outline" onClick={() => toast.info('Detailed analytics coming soon!')}>
-              <TrendingUp className="mr-2 h-4 w-4" />
-              View Analytics
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      
     </div>
   )
 }

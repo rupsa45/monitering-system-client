@@ -64,6 +64,10 @@ export const getSidebarData = (): SidebarData => {
                 title: 'Admin View',
                 url: '/admin-attendance',
               },
+              ...(isAdmin ? [{
+                title: 'Analytics',
+                url: '/admin-timesheet',
+              }] : []),
               {
                 title: 'User View',
                 url: '/user-attendance',
