@@ -176,10 +176,19 @@ export default function AdminAttendance() {
           <h1 className="text-3xl font-bold">Employee Attendance</h1>
           <p className="text-muted-foreground">Monitor and manage employee attendance</p>
         </div>
-        <Button onClick={handleRefresh} disabled={loading}>
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate({ to: '/admin-timesheet' })}
+          >
+            <TrendingUp className="mr-2 h-4 w-4" />
+            View Analytics
+          </Button>
+          <Button onClick={handleRefresh} disabled={loading}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}

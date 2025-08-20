@@ -122,8 +122,8 @@ export default function LoginPage() {
           if (userRole === 'admin') {
             redirectTo = '/'
           } else if (userRole === 'employee') {
-            // Employees should go to their own dashboard
-            redirectTo = '/admin-employee-management'
+            // Employees should go to their employee dashboard
+            redirectTo = '/employee-dashboard'
           }
           
           console.log('User role:', userRole, 'Navigating to:', redirectTo)
