@@ -73,6 +73,38 @@ export interface AllTimesheetsResponse {
   total: number
 }
 
+export interface DateWiseAttendanceHistory {
+  date: string
+  employees: {
+    empId: string
+    empName: string
+    empEmail: string
+    empTechnology: string
+    date: string
+    clockIn: string | null
+    clockOut: string | null
+    hoursLoggedIn: number
+    totalBreakTime: number
+    status: string
+    hasTimesheet: boolean
+    timesheetId?: string
+    createdAt?: string
+    updatedAt?: string
+  }[]
+}
+
+export interface DateWiseHistoryResponse {
+  success: boolean
+  message: string
+  data: DateWiseAttendanceHistory[]
+  total: number
+  dateRange: {
+    start: string
+    end: string
+  }
+  totalEmployees: number
+}
+
 export interface TodaySummaryResponse {
   success: boolean
   message: string
@@ -233,6 +265,36 @@ export class AttendanceService {
       return result
     } catch (error) {
       console.error('AttendanceService getAllTimesheets error:', error)
+      throw error
+    }
+  }
+
+  static async getDateWiseHistory(token: string, startDate?: string, endDate?: string, empId?: string): Promise<DateWiseHistoryResponse> {
+    try {
+      const headers = this.getAuthHeaders(token)
+      let url = `${API_CONFIG.baseURL}${API_ENDPOINTS.adminTimesheet.dateWiseHistory}`
+      
+      const params = new URLSearchParams()
+      if (startDate) params.append('startDate', startDate)
+      if (endDate) params.append('endDate', endDate)
+      if (empId) params.append('empId', empId)
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`
+      }
+      
+      const response = await fetch(url, { method: 'GET', headers })
+      
+      if (!response.ok) {
+        throw new Error((await response.json()).message || 'Failed to fetch date-wise history')
+      }
+      
+      const result = await response.json()
+      console.log('AttendanceService getDateWiseHistory - Raw API response:', result)
+      
+      return result
+    } catch (error) {
+      console.error('AttendanceService getDateWiseHistory error:', error)
       throw error
     }
   }

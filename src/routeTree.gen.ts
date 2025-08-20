@@ -18,6 +18,7 @@ import { Route as AuthenticatedTestRouteImport } from './routes/_authenticated/t
 import { Route as AuthenticatedEmployeeTasksRouteImport } from './routes/_authenticated/employee-tasks'
 import { Route as AuthenticatedEmployeeLeaveManagementRouteImport } from './routes/_authenticated/employee-leave-management'
 import { Route as AuthenticatedEmployeeDashboardRouteImport } from './routes/_authenticated/employee-dashboard'
+import { Route as AuthenticatedAdminTimesheetRouteImport } from './routes/_authenticated/admin-timesheet'
 import { Route as AuthenticatedAdminLeaveManagementRouteImport } from './routes/_authenticated/admin-leave-management'
 import { Route as AuthenticatedAdminEmployeeManagementRouteImport } from './routes/_authenticated/admin-employee-management'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
@@ -99,6 +100,12 @@ const AuthenticatedEmployeeDashboardRoute =
   AuthenticatedEmployeeDashboardRouteImport.update({
     id: '/employee-dashboard',
     path: '/employee-dashboard',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminTimesheetRoute =
+  AuthenticatedAdminTimesheetRouteImport.update({
+    id: '/admin-timesheet',
+    path: '/admin-timesheet',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAdminLeaveManagementRoute =
@@ -311,6 +318,7 @@ export interface FileRoutesByFullPath {
   '/503': typeof errors503Route
   '/admin-employee-management': typeof AuthenticatedAdminEmployeeManagementRoute
   '/admin-leave-management': typeof AuthenticatedAdminLeaveManagementRoute
+  '/admin-timesheet': typeof AuthenticatedAdminTimesheetRoute
   '/employee-dashboard': typeof AuthenticatedEmployeeDashboardRoute
   '/employee-leave-management': typeof AuthenticatedEmployeeLeaveManagementRoute
   '/employee-tasks': typeof AuthenticatedEmployeeTasksRoute
@@ -353,6 +361,7 @@ export interface FileRoutesByTo {
   '/503': typeof errors503Route
   '/admin-employee-management': typeof AuthenticatedAdminEmployeeManagementRoute
   '/admin-leave-management': typeof AuthenticatedAdminLeaveManagementRoute
+  '/admin-timesheet': typeof AuthenticatedAdminTimesheetRoute
   '/employee-dashboard': typeof AuthenticatedEmployeeDashboardRoute
   '/employee-leave-management': typeof AuthenticatedEmployeeLeaveManagementRoute
   '/employee-tasks': typeof AuthenticatedEmployeeTasksRoute
@@ -400,6 +409,7 @@ export interface FileRoutesById {
   '/(errors)/503': typeof errors503Route
   '/_authenticated/admin-employee-management': typeof AuthenticatedAdminEmployeeManagementRoute
   '/_authenticated/admin-leave-management': typeof AuthenticatedAdminLeaveManagementRoute
+  '/_authenticated/admin-timesheet': typeof AuthenticatedAdminTimesheetRoute
   '/_authenticated/employee-dashboard': typeof AuthenticatedEmployeeDashboardRoute
   '/_authenticated/employee-leave-management': typeof AuthenticatedEmployeeLeaveManagementRoute
   '/_authenticated/employee-tasks': typeof AuthenticatedEmployeeTasksRoute
@@ -446,6 +456,7 @@ export interface FileRouteTypes {
     | '/503'
     | '/admin-employee-management'
     | '/admin-leave-management'
+    | '/admin-timesheet'
     | '/employee-dashboard'
     | '/employee-leave-management'
     | '/employee-tasks'
@@ -488,6 +499,7 @@ export interface FileRouteTypes {
     | '/503'
     | '/admin-employee-management'
     | '/admin-leave-management'
+    | '/admin-timesheet'
     | '/employee-dashboard'
     | '/employee-leave-management'
     | '/employee-tasks'
@@ -534,6 +546,7 @@ export interface FileRouteTypes {
     | '/(errors)/503'
     | '/_authenticated/admin-employee-management'
     | '/_authenticated/admin-leave-management'
+    | '/_authenticated/admin-timesheet'
     | '/_authenticated/employee-dashboard'
     | '/_authenticated/employee-leave-management'
     | '/_authenticated/employee-tasks'
@@ -641,6 +654,13 @@ declare module '@tanstack/react-router' {
       path: '/employee-dashboard'
       fullPath: '/employee-dashboard'
       preLoaderRoute: typeof AuthenticatedEmployeeDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin-timesheet': {
+      id: '/_authenticated/admin-timesheet'
+      path: '/admin-timesheet'
+      fullPath: '/admin-timesheet'
+      preLoaderRoute: typeof AuthenticatedAdminTimesheetRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin-leave-management': {
@@ -918,6 +938,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRouteRoute: typeof AuthenticatedSettingsRouteRouteWithChildren
   AuthenticatedAdminEmployeeManagementRoute: typeof AuthenticatedAdminEmployeeManagementRoute
   AuthenticatedAdminLeaveManagementRoute: typeof AuthenticatedAdminLeaveManagementRoute
+  AuthenticatedAdminTimesheetRoute: typeof AuthenticatedAdminTimesheetRoute
   AuthenticatedEmployeeDashboardRoute: typeof AuthenticatedEmployeeDashboardRoute
   AuthenticatedEmployeeLeaveManagementRoute: typeof AuthenticatedEmployeeLeaveManagementRoute
   AuthenticatedEmployeeTasksRoute: typeof AuthenticatedEmployeeTasksRoute
@@ -942,6 +963,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedAdminEmployeeManagementRoute,
   AuthenticatedAdminLeaveManagementRoute:
     AuthenticatedAdminLeaveManagementRoute,
+  AuthenticatedAdminTimesheetRoute: AuthenticatedAdminTimesheetRoute,
   AuthenticatedEmployeeDashboardRoute: AuthenticatedEmployeeDashboardRoute,
   AuthenticatedEmployeeLeaveManagementRoute:
     AuthenticatedEmployeeLeaveManagementRoute,
