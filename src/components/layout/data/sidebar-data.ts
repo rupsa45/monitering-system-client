@@ -63,11 +63,11 @@ export const getSidebarData = (): SidebarData => {
           url: '/monitoring',
           icon: IconActivity,
         },
-        {
-          title: 'Screenshots',
-          url: '/recordings',
-          icon: IconEye,
-        },
+        // {
+        //   title: 'Screenshots',
+        //   url: '/recordings',
+        //   icon: IconEye,
+        // },
       ],
     },
     {
