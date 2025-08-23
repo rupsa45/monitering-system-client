@@ -148,5 +148,39 @@ export const API_ENDPOINTS = {
     summary: '/agent-idle-time/summary',
     employee: '/agent-idle-time/employee',
   },
+  meetings: {
+    // Admin meeting endpoints
+    admin: {
+      create: '/admin/meetings',
+      list: '/admin/meetings',
+      getById: '/admin/meetings',
+      update: '/admin/meetings',
+      start: '/admin/meetings',
+      end: '/admin/meetings',
+      cancel: '/admin/meetings',
+      kick: '/admin/meetings',
+      ban: '/admin/meetings',
+      remind: '/admin/meetings',
+      attendance: '/admin/meetings',
+      reminders: '/admin/meetings/reminders',
+    },
+    // Employee meeting endpoints
+    employee: {
+      create: '/emp/meetings',
+      list: '/emp/meetings',
+      upcoming: '/emp/meetings/upcoming',
+      getByRoomCode: '/emp/meetings',
+      join: '/emp/meetings',
+      leave: '/emp/meetings',
+      accessToken: '/emp/meetings',
+    },
+    // Recording endpoints
+    recordings: {
+      upload: '/emp/meetings',
+      list: '/emp/meetings',
+      delete: '/emp/meetings',
+      stats: '/emp/meetings',
+    }
+  },
 }
 
