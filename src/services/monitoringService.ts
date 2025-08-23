@@ -65,6 +65,32 @@ export interface EmployeeMonitoringData {
   };
 }
 
+export interface EmployeeMonitoringHistory {
+  employee: {
+    id: string;
+    empName: string;
+    empEmail: string;
+    empTechnology: string;
+  };
+  date: string;
+  screenshots: Screenshot[];
+  appUsage: AppUsage[];
+  idleTime: IdleTime[];
+  productivity: {
+    totalKeysPressed: number;
+    totalMouseClicks: number;
+    totalIdleMinutes: number;
+    activeTimePercentage: number;
+    totalWorkHours: number;
+  };
+  attendance: {
+    clockIn: string;
+    clockOut: string;
+    status: string;
+    totalWorkHours: number;
+  };
+}
+
 class MonitoringService {
   // Get all screenshots for a specific date
   async getScreenshots(date?: string): Promise<Screenshot[]> {
@@ -194,13 +220,13 @@ class MonitoringService {
     }
   }
 
-  // Get current attendance status for all employees
+  // Get current attendance status for all employees (deprecated - now using today-summary directly)
   async getCurrentAttendanceStatus(): Promise<any[]> {
     try {
       console.log('Fetching current attendance status');
       const response = await api.get(API_ENDPOINTS.adminTimesheet.todaySummary);
       console.log('Current attendance status response:', response.data);
-      return response.data.summary?.timeSheets || [];
+      return response.data.timeSheets || [];
     } catch (error) {
       console.error('Error fetching current attendance status:', error);
       return [];
@@ -242,6 +268,182 @@ class MonitoringService {
       };
     } catch (error) {
       console.error('Error fetching monitoring summary:', error);
+      throw error;
+    }
+  }
+
+  // Get comprehensive monitoring history for all employees for a specific date
+  async getMonitoringHistory(date: string): Promise<EmployeeMonitoringHistory[]> {
+    try {
+      console.log('Fetching comprehensive monitoring history for date:', date);
+      
+      // Get today's attendance summary as the primary source
+      const attendanceResponse = await api.get(API_ENDPOINTS.adminTimesheet.todaySummary);
+      const attendanceData = attendanceResponse.data;
+      
+      console.log('📊 Today\'s attendance summary:', attendanceData);
+      
+      if (!attendanceData.success || !attendanceData.timeSheets) {
+        console.error('❌ Failed to get attendance data:', attendanceData);
+        throw new Error('Failed to fetch attendance data');
+      }
+
+      const timeSheets = attendanceData.timeSheets;
+      
+      // Get additional monitoring data
+      const [screenshots, appUsageSummary, idleTimeSummary] = await Promise.all([
+        this.getScreenshots(date),
+        this.getAppUsageSummary(date),
+        this.getIdleTimeSummary(date)
+      ]);
+
+      // Create a map of employee data from attendance
+      const employeeMap = new Map<string, EmployeeMonitoringHistory>();
+
+      // Process all employees from attendance data
+      timeSheets.forEach((timesheet: any) => {
+        if (timesheet.employee) {
+          console.log(`👤 Processing employee ${timesheet.employee.empName}:`, {
+            clockIn: timesheet.clockIn,
+            clockOut: timesheet.clockOut,
+            status: timesheet.status,
+            hoursLoggedIn: timesheet.hoursLoggedIn
+          });
+
+          employeeMap.set(timesheet.empId, {
+            employee: timesheet.employee,
+            date,
+            screenshots: [],
+            appUsage: [],
+            idleTime: [],
+            productivity: {
+              totalKeysPressed: 0,
+              totalMouseClicks: 0,
+              totalIdleMinutes: 0,
+              activeTimePercentage: 0,
+              totalWorkHours: timesheet.hoursLoggedIn || 0
+            },
+            attendance: {
+              clockIn: timesheet.clockIn || '',
+              clockOut: timesheet.clockOut || '',
+              status: timesheet.status || 'UNKNOWN',
+              totalWorkHours: timesheet.hoursLoggedIn || 0
+            }
+          });
+        }
+      });
+
+      // Add screenshots to employee data
+      screenshots.forEach(screenshot => {
+        const employeeData = employeeMap.get(screenshot.empId);
+        if (employeeData) {
+          employeeData.screenshots.push(screenshot);
+        }
+      });
+
+      // Add app usage data to employee data
+      appUsageSummary.forEach((emp: any) => {
+        if (emp.employee) {
+          const existingEmployee = employeeMap.get(emp.employee.id);
+          if (existingEmployee) {
+            existingEmployee.productivity.totalKeysPressed = emp.totalKeysPressed || 0;
+            existingEmployee.productivity.totalMouseClicks = emp.totalMouseClicks || 0;
+            existingEmployee.appUsage = emp.appUsage || [];
+          }
+        }
+      });
+
+      // Add idle time to employee data
+      idleTimeSummary.forEach(idle => {
+        const employeeData = employeeMap.get(idle.empId);
+        if (employeeData) {
+          employeeData.idleTime.push(idle);
+          employeeData.productivity.totalIdleMinutes = idle.totalIdleMinutes || 0;
+        }
+      });
+
+      // Log the final employee map for debugging
+      console.log('📊 Final employee map from attendance data:', Array.from(employeeMap.entries()).map(([id, data]) => ({
+        id,
+        name: data.employee.empName,
+        clockIn: data.attendance.clockIn,
+        clockOut: data.attendance.clockOut,
+        status: data.attendance.status,
+        isCurrentlyWorking: data.attendance.clockIn && !data.attendance.clockOut
+      })));
+
+      // Calculate productivity metrics for each employee
+      const monitoringHistory = Array.from(employeeMap.values()).map(employeeData => {
+        const totalActivity = employeeData.productivity.totalKeysPressed + employeeData.productivity.totalMouseClicks;
+        const workdayMinutes = 8 * 60; // 8 hours in minutes
+        const activeTimePercentage = ((workdayMinutes - employeeData.productivity.totalIdleMinutes) / workdayMinutes) * 100;
+        
+        return {
+          ...employeeData,
+          productivity: {
+            ...employeeData.productivity,
+            activeTimePercentage: Math.round(Math.max(0, Math.min(100, activeTimePercentage)))
+          }
+        };
+      });
+
+      console.log('✅ Monitoring history fetched successfully:', monitoringHistory.length, 'employees');
+      return monitoringHistory;
+
+    } catch (error) {
+      console.error('Error fetching monitoring history:', error);
+      throw error;
+    }
+  }
+
+  // Get monitoring history for a specific employee
+  async getEmployeeMonitoringHistory(employeeId: string, startDate: string, endDate: string): Promise<EmployeeMonitoringHistory[]> {
+    try {
+      console.log('Fetching employee monitoring history:', { employeeId, startDate, endDate });
+      
+      const history: EmployeeMonitoringHistory[] = [];
+      const currentDate = new Date(startDate);
+      const end = new Date(endDate);
+      
+      while (currentDate <= end) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        
+        try {
+          const dailyData = await this.getEmployeeMonitoringData(employeeId, dateStr);
+          
+          // Get attendance data for this date
+          const attendanceResponse = await api.get(`${API_ENDPOINTS.adminTimesheet.employeeTimesheet}/${employeeId}?date=${dateStr}`);
+          const attendanceData = attendanceResponse.data.data?.timeSheets?.[0] || {};
+          
+          const historyEntry: EmployeeMonitoringHistory = {
+            employee: dailyData.employee,
+            date: dateStr,
+            screenshots: dailyData.screenshots,
+            appUsage: dailyData.appUsage,
+            idleTime: dailyData.idleTime,
+            productivity: {
+              ...dailyData.productivity,
+              totalWorkHours: attendanceData.totalWorkHours || 0
+            },
+            attendance: {
+              clockIn: attendanceData.clockIn || '',
+              clockOut: attendanceData.clockOut || '',
+              status: attendanceData.status || 'UNKNOWN',
+              totalWorkHours: attendanceData.totalWorkHours || 0
+            }
+          };
+          
+          history.push(historyEntry);
+        } catch (error) {
+          console.warn(`No data available for ${dateStr}:`, error.message);
+        }
+        
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      return history;
+    } catch (error) {
+      console.error('Error fetching employee monitoring history:', error);
       throw error;
     }
   }

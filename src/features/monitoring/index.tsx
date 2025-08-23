@@ -23,7 +23,14 @@ import {
   IconClock,
   IconRefresh,
   IconActivity,
-  IconEye
+  IconEye,
+  IconCalendar,
+  IconChartBar,
+  IconKeyboard,
+  IconMouse,
+  IconScreenshot,
+  IconDownload,
+  IconTrash
 } from '@tabler/icons-react'
 import {
   DropdownMenu,
@@ -32,7 +39,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { useState, useEffect } from 'react'
-import monitoringService, { MonitoringSummary } from '@/services/monitoringService'
+import monitoringService, { MonitoringSummary, EmployeeMonitoringHistory } from '@/services/monitoringService'
 import { toast } from 'sonner'
 
 interface EmployeeStatus {
@@ -63,6 +70,9 @@ export default function Monitoring() {
   const [error, setError] = useState<string | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeStatus | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [monitoringHistory, setMonitoringHistory] = useState<EmployeeMonitoringHistory[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   // Fetch monitoring data
   const fetchMonitoringData = async () => {
@@ -72,92 +82,73 @@ export default function Monitoring() {
       
       console.log('🔄 Fetching monitoring data for date:', selectedDate);
       
-      // Fetch monitoring data
-      const [summaryData, appUsageSummary, attendanceStatus] = await Promise.all([
-        monitoringService.getMonitoringSummary(selectedDate).catch(err => {
-          console.error('Error fetching summary:', err);
-          return null;
-        }),
-        monitoringService.getAppUsageSummary(selectedDate).catch(err => {
-          console.error('Error fetching app usage:', err);
-          return [];
-        }),
-        monitoringService.getCurrentAttendanceStatus().catch(err => {
-          console.error('Error fetching attendance status:', err);
-          return [];
-        })
-      ]);
-
-      console.log('📊 Summary data:', summaryData);
-      console.log('💻 App usage data:', appUsageSummary);
-      console.log('⏰ Attendance status:', attendanceStatus);
+      // Fetch comprehensive monitoring history instead of separate calls
+      const historyData = await monitoringService.getMonitoringHistory(selectedDate);
+      setMonitoringHistory(historyData);
       
-      // Debug: Log each employee's data processing
-      appUsageSummary.forEach((emp, index) => {
-        console.log(`🔍 Employee ${index + 1}:`, {
-          name: emp.employee?.empName,
-          id: emp.employee?.id,
-          totalApps: emp.totalApps,
-          totalKeysPressed: emp.totalKeysPressed,
-          totalMouseClicks: emp.totalMouseClicks,
-          productivity: Math.min(100, Math.round(((emp.totalKeysPressed + emp.totalMouseClicks) / 1000) * 100))
-        });
-      });
-
-      setSummary(summaryData);
-
-      // Process employee data from app usage and attendance
-      const employeeStatuses: EmployeeStatus[] = appUsageSummary.map((emp: any) => {
-        const employee = emp.employee;
-        const totalActivity = emp.totalKeysPressed + emp.totalMouseClicks;
+      // Show success toast for manual refresh
+      if (!loading) {
+        toast.success('Monitoring data refreshed successfully');
+      }
+      
+      // Update last updated timestamp
+      setLastUpdated(new Date());
+      
+      // Process employee data from monitoring history
+      const employeeStatuses: EmployeeStatus[] = historyData.map((emp) => {
+        const totalActivity = emp.productivity.totalKeysPressed + emp.productivity.totalMouseClicks;
         const productivity = totalActivity > 0 ? Math.min(100, Math.round((totalActivity / 1000) * 100)) : 0;
         
-        // Since we don't have lastActivity in app usage data, assume recent activity if they have app data
-        const hasAppActivity = emp.totalApps > 0 && (emp.totalKeysPressed > 0 || emp.totalMouseClicks > 0);
+        // Debug logging for status determination
+        console.log(`🔍 Employee ${emp.employee.empName} status check:`, {
+          clockIn: emp.attendance.clockIn,
+          clockOut: emp.attendance.clockOut,
+          status: emp.attendance.status,
+          activeTimePercentage: emp.productivity.activeTimePercentage,
+          totalActivity
+        });
         
-        // Find attendance status for this employee
-        const attendance = attendanceStatus.find((att: any) => att.empId === employee?.id);
-        const isClockedIn = attendance?.status === 'PRESENT' && !attendance?.clockOut;
-        
-        // If no attendance data, assume clocked in if they have app activity
-        const assumedClockedIn = !attendance && hasAppActivity;
-        
-        // Determine status based on actual attendance and activity
+        // Determine status based on attendance data from today-summary endpoint
         let status: 'active' | 'break' | 'offline' | 'away' = 'offline';
         
-        if (isClockedIn || assumedClockedIn) {
-          if (hasAppActivity) {
-            if (productivity > 30) status = 'active';
-            else if (productivity > 10) status = 'away';
-            else status = 'break';
-          } else {
-            status = 'active'; // Clocked in but no app data yet
-          }
-        } else {
-          status = 'offline'; // Not clocked in
+        // Check if employee has clocked in today and hasn't clocked out
+        if (emp.attendance.clockIn && !emp.attendance.clockOut) {
+          // Employee is currently working (clocked in but not clocked out)
+          if (emp.productivity.activeTimePercentage > 70) status = 'active';
+          else if (emp.productivity.activeTimePercentage > 30) status = 'away';
+          else status = 'break';
+        } else if (emp.attendance.clockIn && emp.attendance.clockOut) {
+          status = 'offline'; // Clocked out for the day
+        } else if (!emp.attendance.clockIn) {
+          status = 'offline'; // Haven't clocked in today
         }
         
+        console.log(`✅ Employee ${emp.employee.empName} final status: ${status} (clockIn: ${emp.attendance.clockIn}, clockOut: ${emp.attendance.clockOut})`);
+        
         return {
-          id: employee?.id || 'unknown',
-          name: employee?.empName || 'Unknown Employee',
-          email: employee?.empEmail || 'unknown@example.com',
+          id: emp.employee.id,
+          name: emp.employee.empName,
+          email: emp.employee.empEmail,
           status,
-          initials: employee?.empName?.split(' ').map(n => n[0]).join('').toUpperCase() || 'UN',
-          lastActivity: new Date().toISOString(), // Use current time since we don't have this data
-          currentApp: `${emp.totalApps} apps used`, // Show app count since we don't have current app
+          initials: emp.employee.empName?.split(' ').map(n => n[0]).join('').toUpperCase() || 'UN',
+          lastActivity: new Date().toISOString(),
+          currentApp: `${emp.appUsage.length} apps used`,
           productivity
         };
       });
 
-      // If no app usage data, show empty state instead of placeholder
-      if (employeeStatuses.length === 0) {
-        console.log('⚠️ No app usage data found, showing empty state');
-        setEmployees([]);
-        return;
-      }
-
-      console.log('✅ Final employee statuses:', employeeStatuses);
       setEmployees(employeeStatuses);
+
+      // Create summary from history data
+      const summaryData: MonitoringSummary = {
+        totalEmployees: historyData.length,
+        activeEmployees: employeeStatuses.filter(e => e.status === 'active').length,
+        screenshotsToday: historyData.reduce((sum, emp) => sum + emp.screenshots.length, 0),
+        averageProductivity: Math.round(employeeStatuses.reduce((sum, emp) => sum + emp.productivity, 0) / employeeStatuses.length) || 0,
+        totalIdleTime: Math.round(historyData.reduce((sum, emp) => sum + emp.productivity.totalIdleMinutes, 0))
+      };
+      
+      setSummary(summaryData);
 
     } catch (error) {
       console.error('❌ Error fetching monitoring data:', error);
@@ -224,14 +215,47 @@ export default function Monitoring() {
     }
   };
 
-  // Auto-refresh interval
+  // Get selected employee's monitoring history
+  const getSelectedEmployeeHistory = () => {
+    if (!selectedEmployee) return null;
+    return monitoringHistory.find(emp => emp.employee.id === selectedEmployee.id);
+  };
+
+  // Auto-refresh interval - reduced to 15 seconds for more responsive updates
   useEffect(() => {
     const interval = setInterval(() => {
       fetchMonitoringData();
-    }, 30000); // Refresh every 30 seconds
+    }, 15000); // Refresh every 15 seconds
 
     return () => clearInterval(interval);
   }, [selectedDate]);
+
+  // Refresh when page becomes visible (e.g., when user switches tabs back)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('🔄 Page became visible, refreshing monitoring data...');
+        fetchMonitoringData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Keyboard shortcut for refresh (Ctrl+R or F5)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey && event.key === 'r') || event.key === 'F5') {
+        event.preventDefault();
+        console.log('🔄 Keyboard shortcut detected, refreshing monitoring data...');
+        fetchMonitoringData();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Fetch data on component mount and date change
   useEffect(() => {
@@ -257,7 +281,10 @@ export default function Monitoring() {
         <div>
           <h2 className='text-2xl font-bold tracking-tight'>User Monitoring</h2>
           <p className='text-muted-foreground'>
-            A real-time view of currently active user sessions.
+            A real-time view of currently active user sessions and historical monitoring data.
+          </p>
+          <p className='text-xs text-muted-foreground'>
+            Last updated: {lastUpdated.toLocaleTimeString()}
           </p>
         </div>
         <div className='flex items-center space-x-2'>
@@ -267,8 +294,15 @@ export default function Monitoring() {
             onChange={(e) => setSelectedDate(e.target.value)}
             className="w-auto"
           />
-          <Button onClick={fetchMonitoringData} variant="outline" size="icon">
-            <IconRefresh className="h-4 w-4" />
+          <Button 
+            onClick={fetchMonitoringData} 
+            variant="outline" 
+            size="sm"
+            disabled={loading}
+            className="flex items-center space-x-2"
+          >
+            <IconRefresh className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <span>{loading ? 'Refreshing...' : 'Refresh'}</span>
           </Button>
         </div>
       </div>
@@ -322,23 +356,23 @@ export default function Monitoring() {
           
           <Card>
             <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-              <CardTitle className='text-sm font-medium'>Offline</CardTitle>
-              <IconUserOff className='h-4 w-4 text-muted-foreground' />
+              <CardTitle className='text-sm font-medium'>Screenshots</CardTitle>
+              <IconScreenshot className='h-4 w-4 text-muted-foreground' />
             </CardHeader>
             <CardContent>
-              <div className='text-2xl font-bold'>{employees.filter(e => e.status === 'offline').length}</div>
-              <p className='text-xs text-muted-foreground'>Users currently offline</p>
+              <div className='text-2xl font-bold'>{summary.screenshotsToday}</div>
+              <p className='text-xs text-muted-foreground'>Captured today</p>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-              <CardTitle className='text-sm font-medium'>Away</CardTitle>
-              <IconClock className='h-4 w-4 text-muted-foreground' />
+              <CardTitle className='text-sm font-medium'>Avg Productivity</CardTitle>
+              <IconChartBar className='h-4 w-4 text-muted-foreground' />
             </CardHeader>
             <CardContent>
-              <div className='text-2xl font-bold'>{employees.filter(e => e.status === 'away').length}</div>
-              <p className='text-xs text-muted-foreground'>Users currently away</p>
+              <div className='text-2xl font-bold'>{summary.averageProductivity}%</div>
+              <p className='text-xs text-muted-foreground'>Team average</p>
             </CardContent>
           </Card>
         </div>
@@ -417,63 +451,96 @@ export default function Monitoring() {
       {viewMode === 'grid' ? (
         /* Grid View */
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-          {filteredEmployees.map((employee) => (
-            <div key={employee.id} className='bg-card border rounded-lg overflow-hidden hover:shadow-md transition-shadow'>
-              {/* Employee Screenshot */}
-              <div className='bg-muted h-48 flex items-center justify-center relative overflow-hidden'>
-                {employee.status === 'offline' ? (
-                  <div className='text-muted-foreground text-sm text-center'>
-                    <IconUserOff className='h-8 w-8 mx-auto mb-2' />
-                    <div>Employee Offline</div>
-                  </div>
-                ) : (
-                  <>
-                    <div className='text-muted-foreground text-sm'>Screenshot Loading...</div>
-                    {employee.status === 'active' && (
-                      <div className='absolute top-2 right-2'>
-                        <div className='w-3 h-3 bg-green-500 rounded-full animate-pulse'></div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-              
-              {/* Employee Info */}
-              <div className='p-4'>
-                <div className='flex items-center space-x-3 mb-3'>
-                  <Avatar className='h-8 w-8'>
-                    <AvatarImage src={employee.avatar} alt={employee.name} />
-                    <AvatarFallback className='text-xs'>{employee.initials}</AvatarFallback>
-                  </Avatar>
-                  <div className='flex-1'>
-                    <h3 className='font-semibold'>{employee.name}</h3>
-                    <p className='text-sm text-muted-foreground'>{employee.email}</p>
-                    <p className='text-xs text-muted-foreground'>Current: {employee.currentApp}</p>
-                  </div>
+          {filteredEmployees.map((employee) => {
+            const employeeHistory = monitoringHistory.find(emp => emp.employee.id === employee.id);
+            const hasScreenshots = employeeHistory?.screenshots.length > 0;
+            
+            return (
+              <div key={employee.id} className='bg-card border rounded-lg overflow-hidden hover:shadow-md transition-shadow'>
+                {/* Employee Screenshot */}
+                <div className='bg-muted h-48 flex items-center justify-center relative overflow-hidden'>
+                  {employee.status === 'offline' ? (
+                    <div className='text-muted-foreground text-sm text-center'>
+                      <IconUserOff className='h-8 w-8 mx-auto mb-2' />
+                      <div>Employee Offline</div>
+                    </div>
+                  ) : hasScreenshots ? (
+                    <div className='w-full h-full flex items-center justify-center'>
+                      <img 
+                        src={employeeHistory?.screenshots[0]?.imageUrl} 
+                        alt={`Screenshot of ${employee.name}`}
+                        className='w-full h-full object-cover'
+                      />
+                      {employee.status === 'active' && (
+                        <div className='absolute top-2 right-2'>
+                          <div className='w-3 h-3 bg-green-500 rounded-full animate-pulse'></div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className='text-muted-foreground text-sm text-center'>
+                      <IconScreenshot className='h-8 w-8 mx-auto mb-2' />
+                      <div>No Screenshots</div>
+                      <div className='text-xs'>Monitoring in progress</div>
+                    </div>
+                  )}
                 </div>
                 
-                <div className='flex items-center justify-between mb-3'>
-                  {getStatusBadge(employee.status)}
-                  <div className='text-sm'>
-                    <span className='font-medium'>{employee.productivity}%</span>
-                    <span className='text-muted-foreground'> productive</span>
+                {/* Employee Info */}
+                <div className='p-4'>
+                  <div className='flex items-center space-x-3 mb-3'>
+                    <Avatar className='h-8 w-8'>
+                      <AvatarImage src={employee.avatar} alt={employee.name} />
+                      <AvatarFallback className='text-xs'>{employee.initials}</AvatarFallback>
+                    </Avatar>
+                    <div className='flex-1'>
+                      <h3 className='font-semibold'>{employee.name}</h3>
+                      <p className='text-sm text-muted-foreground'>{employee.email}</p>
+                      <p className='text-xs text-muted-foreground'>Current: {employee.currentApp}</p>
+                    </div>
+                  </div>
+                  
+                  <div className='flex items-center justify-between mb-3'>
+                    {getStatusBadge(employee.status)}
+                    <div className='text-sm'>
+                      <span className='font-medium'>{employee.productivity}%</span>
+                      <span className='text-muted-foreground'> productive</span>
+                    </div>
+                  </div>
+
+                  {/* Monitoring Stats */}
+                  {employeeHistory && (
+                    <div className='space-y-2 mb-3 text-xs text-muted-foreground'>
+                      <div className='flex justify-between'>
+                        <span>Screenshots:</span>
+                        <span>{employeeHistory.screenshots.length}</span>
+                      </div>
+                      <div className='flex justify-between'>
+                        <span>Apps Used:</span>
+                        <span>{employeeHistory.appUsage.length}</span>
+                      </div>
+                      <div className='flex justify-between'>
+                        <span>Idle Time:</span>
+                        <span>{Math.round(employeeHistory.productivity.totalIdleMinutes)} min</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className='flex space-x-2'>
+                    <Button 
+                      size='sm' 
+                      variant='outline' 
+                      className='flex-1'
+                      onClick={() => handleViewDetails(employee)}
+                    >
+                      <IconEye className='h-3 w-3 mr-1' />
+                      View Details
+                    </Button>
                   </div>
                 </div>
-
-                <div className='flex space-x-2'>
-                  <Button 
-                    size='sm' 
-                    variant='outline' 
-                    className='flex-1'
-                    onClick={() => handleViewDetails(employee)}
-                  >
-                    <IconEye className='h-3 w-3 mr-1' />
-                    View Details
-                  </Button>
-                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         /* List View */
@@ -486,59 +553,67 @@ export default function Monitoring() {
                   <th className='text-left p-4 font-medium'>Status</th>
                   <th className='text-left p-4 font-medium'>Current App</th>
                   <th className='text-left p-4 font-medium'>Productivity</th>
+                  <th className='text-left p-4 font-medium'>Screenshots</th>
                   <th className='text-left p-4 font-medium'>Last Activity</th>
                   <th className='text-left p-4 font-medium'>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredEmployees.map((employee) => (
-                  <tr key={employee.id} className='border-b hover:bg-muted/50'>
-                    <td className='p-4'>
-                      <div className='flex items-center space-x-3'>
-                        <Avatar className='h-8 w-8'>
-                          <AvatarImage src={employee.avatar} alt={employee.name} />
-                          <AvatarFallback>{employee.initials}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className='font-medium'>{employee.name}</div>
-                          <div className='text-sm text-muted-foreground'>{employee.email}</div>
+                {filteredEmployees.map((employee) => {
+                  const employeeHistory = monitoringHistory.find(emp => emp.employee.id === employee.id);
+                  
+                  return (
+                    <tr key={employee.id} className='border-b hover:bg-muted/50'>
+                      <td className='p-4'>
+                        <div className='flex items-center space-x-3'>
+                          <Avatar className='h-8 w-8'>
+                            <AvatarImage src={employee.avatar} alt={employee.name} />
+                            <AvatarFallback>{employee.initials}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className='font-medium'>{employee.name}</div>
+                            <div className='text-sm text-muted-foreground'>{employee.email}</div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className='p-4'>
-                      {getStatusBadge(employee.status)}
-                    </td>
-                    <td className='p-4 text-sm text-muted-foreground'>
-                      {employee.currentApp}
-                    </td>
-                    <td className='p-4'>
-                      <div className='flex items-center space-x-2'>
-                        <div className='w-16 bg-gray-200 rounded-full h-2'>
-                          <div 
-                            className='bg-green-500 h-2 rounded-full' 
-                            style={{ width: `${employee.productivity}%` }}
-                          ></div>
+                      </td>
+                      <td className='p-4'>
+                        {getStatusBadge(employee.status)}
+                      </td>
+                      <td className='p-4 text-sm text-muted-foreground'>
+                        {employee.currentApp}
+                      </td>
+                      <td className='p-4'>
+                        <div className='flex items-center space-x-2'>
+                          <div className='w-16 bg-gray-200 rounded-full h-2'>
+                            <div 
+                              className='bg-green-500 h-2 rounded-full' 
+                              style={{ width: `${employee.productivity}%` }}
+                            ></div>
+                          </div>
+                          <span className='text-sm font-medium'>{employee.productivity}%</span>
                         </div>
-                        <span className='text-sm font-medium'>{employee.productivity}%</span>
-                      </div>
-                    </td>
-                    <td className='p-4 text-sm text-muted-foreground'>
-                      {new Date(employee.lastActivity).toLocaleTimeString()}
-                    </td>
-                    <td className='p-4'>
-                      <div className='flex space-x-2'>
-                        <Button 
-                          size='sm' 
-                          variant='outline'
-                          onClick={() => handleViewDetails(employee)}
-                        >
-                          <IconEye className='h-3 w-3 mr-1' />
-                          View
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className='p-4 text-sm text-muted-foreground'>
+                        {employeeHistory?.screenshots.length || 0}
+                      </td>
+                      <td className='p-4 text-sm text-muted-foreground'>
+                        {new Date(employee.lastActivity).toLocaleTimeString()}
+                      </td>
+                      <td className='p-4'>
+                        <div className='flex space-x-2'>
+                          <Button 
+                            size='sm' 
+                            variant='outline'
+                            onClick={() => handleViewDetails(employee)}
+                          >
+                            <IconEye className='h-3 w-3 mr-1' />
+                            View
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -569,7 +644,7 @@ export default function Monitoring() {
 
       {/* Employee Details Modal */}
       <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-3">
               <Avatar className='h-10 w-10'>
@@ -579,10 +654,11 @@ export default function Monitoring() {
               <div>
                 <div className="text-xl font-semibold">{selectedEmployee?.name}</div>
                 <div className="text-sm text-muted-foreground">{selectedEmployee?.email}</div>
+                <div className="text-xs text-muted-foreground">Date: {selectedDate}</div>
               </div>
             </DialogTitle>
             <DialogDescription>
-              Detailed monitoring information for {selectedEmployee?.name}
+              Detailed monitoring information for {selectedEmployee?.name} on {selectedDate}
             </DialogDescription>
           </DialogHeader>
           
@@ -616,46 +692,378 @@ export default function Monitoring() {
               </Card>
 
               {/* Screenshots Section */}
-              <Card>
+              {/* <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Recent Screenshots</CardTitle>
+                  <CardTitle className="text-lg flex items-center space-x-2">
+                    <IconScreenshot className="h-5 w-5" />
+                    <span>Recent Screenshots</span>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-8 text-muted-foreground">
-                    <IconEye className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Screenshots will appear here when available</p>
-                    <p className="text-sm">Make sure the employee is clocked in and monitoring is active</p>
+                  {(() => {
+                    const employeeHistory = getSelectedEmployeeHistory();
+                    const screenshots = employeeHistory?.screenshots || [];
+                    
+                    if (screenshots.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <IconScreenshot className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>No screenshots available for this date</p>
+                          <p className="text-sm">Make sure the employee is clocked in and monitoring is active</p>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {screenshots.map((screenshot) => (
+                          <div key={screenshot.id} className="relative group">
+                            <img 
+                              src={screenshot.imageUrl} 
+                              alt={`Screenshot at ${new Date(screenshot.createdAt).toLocaleTimeString()}`}
+                              className="w-full h-32 object-cover rounded-lg border"
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex space-x-2">
+                                <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
+                                  <IconDownload className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="destructive" className="h-8 w-8 p-0">
+                                  <IconTrash className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1 text-center">
+                              {new Date(screenshot.createdAt).toLocaleTimeString()}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card> */}
+
+              {/* Enhanced App Usage Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center space-x-2">
+                    <IconActivity className="h-5 w-5" />
+                    <span>App Usage Analytics</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const employeeHistory = getSelectedEmployeeHistory();
+                    const appUsage = employeeHistory?.appUsage || [];
+                    
+                    if (appUsage.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <IconActivity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>No app usage data available for this date</p>
+                          <p className="text-sm">This includes applications used, time spent, and activity patterns</p>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div className="space-y-4">
+                        {/* Summary Cards */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                          <div className="bg-muted p-3 rounded-lg">
+                            <div className="text-2xl font-bold text-blue-600">{appUsage.length}</div>
+                            <div className="text-xs text-muted-foreground">Total Apps Used</div>
+                          </div>
+                          <div className="bg-muted p-3 rounded-lg">
+                            <div className="text-2xl font-bold text-green-600">{employeeHistory?.productivity.totalKeysPressed || 0}</div>
+                            <div className="text-xs text-muted-foreground">Total Keys Pressed</div>
+                          </div>
+                          <div className="bg-muted p-3 rounded-lg">
+                            <div className="text-2xl font-bold text-purple-600">{employeeHistory?.productivity.totalMouseClicks || 0}</div>
+                            <div className="text-xs text-muted-foreground">Total Mouse Clicks</div>
+                          </div>
+                          <div className="bg-muted p-3 rounded-lg">
+                            <div className="text-2xl font-bold text-orange-600">{employeeHistory?.productivity.activeTimePercentage || 0}%</div>
+                            <div className="text-xs text-muted-foreground">Active Time</div>
+                          </div>
+                        </div>
+                        
+                        {/* Detailed App List */}
+                        <div className="space-y-2">
+                          <h4 className="font-medium">Application Details:</h4>
+                          {appUsage.map((app, index) => (
+                            <div key={app.id} className="flex items-center justify-between p-3 bg-muted rounded-lg border">
+                              <div className="flex-1">
+                                <div className="font-medium text-blue-600">{app.appName}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {new Date(app.appOpenAt).toLocaleTimeString()} - {new Date(app.appCloseAt).toLocaleTimeString()}
+                                </div>
+                                {app.appPath && (
+                                  <div className="text-xs text-muted-foreground font-mono">
+                                    Path: {app.appPath}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right text-sm space-y-1">
+                                <div className="flex items-center space-x-1 bg-green-100 dark:bg-green-900 px-2 py-1 rounded">
+                                  <IconKeyboard className="h-3 w-3 text-green-600" />
+                                  <span className="font-medium">{app.keysPressed}</span>
+                                  <span className="text-xs">keys</span>
+                                </div>
+                                <div className="flex items-center space-x-1 bg-purple-100 dark:bg-purple-900 px-2 py-1 rounded">
+                                  <IconMouse className="h-3 w-3 text-purple-600" />
+                                  <span className="font-medium">{app.mouseClicks}</span>
+                                  <span className="text-xs">clicks</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Activity Breakdown */}
+                        <div className="space-y-2">
+                          <h4 className="font-medium">Activity Breakdown:</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                              <div className="font-medium text-green-700 dark:text-green-300 mb-2">Keyboard Activity</div>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span>Total Keys Pressed:</span>
+                                  <span className="font-medium">{employeeHistory?.productivity.totalKeysPressed || 0}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Average per App:</span>
+                                  <span className="font-medium">
+                                    {appUsage.length > 0 ? Math.round((employeeHistory?.productivity.totalKeysPressed || 0) / appUsage.length) : 0}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Most Active App:</span>
+                                  <span className="font-medium">
+                                    {appUsage.length > 0 ? appUsage.reduce((max, app) => app.keysPressed > max.keysPressed ? app : max).appName : 'N/A'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg border border-purple-200 dark:border-purple-800">
+                              <div className="font-medium text-purple-700 dark:text-purple-300 mb-2">Mouse Activity</div>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span>Total Mouse Clicks:</span>
+                                  <span className="font-medium">{employeeHistory?.productivity.totalMouseClicks || 0}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Average per App:</span>
+                                  <span className="font-medium">
+                                    {appUsage.length > 0 ? Math.round((employeeHistory?.productivity.totalMouseClicks || 0) / appUsage.length) : 0}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Most Active App:</span>
+                                  <span className="font-medium">
+                                    {appUsage.length > 0 ? appUsage.reduce((max, app) => app.mouseClicks > max.mouseClicks ? app : max).appName : 'N/A'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Real-time Desktop Activity */}
+                        <div className="space-y-2">
+                          <h4 className="font-medium">Real-time Desktop Activity:</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+                              <div className="font-medium text-blue-700 dark:text-blue-300 mb-2">Currently Open Apps</div>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span>Total Open:</span>
+                                  <span className="font-medium">{appUsage.length}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Active Now:</span>
+                                  <span className="font-medium">
+                                    {appUsage.filter(app => {
+                                      const now = new Date();
+                                      const closeTime = new Date(app.appCloseAt);
+                                      return closeTime > now;
+                                    }).length}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Current App:</span>
+                                  <span className="font-medium text-xs truncate">
+                                    {selectedEmployee?.currentApp || 'Unknown'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800">
+                              <div className="font-medium text-orange-700 dark:text-orange-300 mb-2">Today's Activity</div>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span>Keys Pressed:</span>
+                                  <span className="font-medium">{employeeHistory?.productivity.totalKeysPressed || 0}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Mouse Clicks:</span>
+                                  <span className="font-medium">{employeeHistory?.productivity.totalMouseClicks || 0}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Total Actions:</span>
+                                  <span className="font-medium">
+                                    {(employeeHistory?.productivity.totalKeysPressed || 0) + (employeeHistory?.productivity.totalMouseClicks || 0)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                              <div className="font-medium text-red-700 dark:text-red-300 mb-2">Session Stats</div>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span>Session Start:</span>
+                                  <span className="font-medium text-xs">
+                                    {employeeHistory?.attendance.clockIn ? new Date(employeeHistory.attendance.clockIn).toLocaleTimeString() : 'N/A'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Work Hours:</span>
+                                  <span className="font-medium">{employeeHistory?.attendance.totalWorkHours || 0}h</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Active Time:</span>
+                                  <span className="font-medium">{employeeHistory?.productivity.activeTimePercentage || 0}%</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+
+              {/* Productivity Metrics */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center space-x-2">
+                    <IconChartBar className="h-5 w-5" />
+                    <span>Productivity Metrics</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const employeeHistory = getSelectedEmployeeHistory();
+                    
+                    if (!employeeHistory) {
+                      return (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <IconChartBar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>No productivity data available</p>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="bg-muted p-3 rounded-lg text-center">
+                            <div className="text-2xl font-bold text-green-600">
+                              {employeeHistory.productivity.activeTimePercentage}%
+                            </div>
+                            <div className="text-xs text-muted-foreground">Active Time</div>
+                          </div>
+                          <div className="bg-muted p-3 rounded-lg text-center">
+                            <div className="text-2xl font-bold text-orange-600">
+                              {Math.round(employeeHistory.productivity.totalIdleMinutes)}m
+                            </div>
+                            <div className="text-xs text-muted-foreground">Idle Time</div>
+                          </div>
+                          <div className="bg-muted p-3 rounded-lg text-center">
+                            <div className="text-2xl font-bold text-blue-600">
+                              {employeeHistory.attendance.totalWorkHours}h
+                            </div>
+                            <div className="text-xs text-muted-foreground">Work Hours</div>
+                          </div>
+                          <div className="bg-muted p-3 rounded-lg text-center">
+                            <div className="text-2xl font-bold text-purple-600">
+                              {employeeHistory.screenshots.length}
+                            </div>
+                            <div className="text-xs text-muted-foreground">Screenshots</div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <h4 className="font-medium">Attendance Summary:</h4>
+                          <div className="bg-muted p-3 rounded">
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="font-medium">Clock In:</span>
+                                <span className="ml-2 text-muted-foreground">
+                                  {employeeHistory.attendance.clockIn || 'Not recorded'}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="font-medium">Clock Out:</span>
+                                <span className="ml-2 text-muted-foreground">
+                                  {employeeHistory.attendance.clockOut || 'Not recorded'}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="font-medium">Status:</span>
+                                <span className="ml-2 text-muted-foreground">
+                                  {employeeHistory.attendance.status}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="font-medium">Total Hours:</span>
+                                <span className="ml-2 text-muted-foreground">
+                                  {employeeHistory.attendance.totalWorkHours} hours
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+
+              {/* Electron Application Details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center space-x-2">
+                    <IconActivity className="h-5 w-5" />
+                    <span>Electron Application Details</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-muted p-3 rounded-lg">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">App Name:</span>
+                        <span className="ml-2 text-muted-foreground">Tellis Technologies</span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Version:</span>
+                        <span className="ml-2 text-muted-foreground">1.0.0</span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Platform:</span>
+                        <span className="ml-2 text-muted-foreground">Windows</span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Architecture:</span>
+                        <span className="ml-2 text-muted-foreground">x64</span>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* App Usage Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">App Usage Analytics</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-muted-foreground">
-                    <IconActivity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Detailed app usage data will appear here</p>
-                    <p className="text-sm">This includes applications used, time spent, and activity patterns</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Productivity Trends */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Productivity Trends</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-muted-foreground">
-                    <IconClock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Productivity trends and analytics will appear here</p>
-                    <p className="text-sm">Historical data and performance metrics</p>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           )}
         </DialogContent>
