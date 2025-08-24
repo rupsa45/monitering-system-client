@@ -3,7 +3,7 @@ import Cookies from 'js-cookie';
 
 export const API_CONFIG = {
 
-  baseURL: 'http://localhost:9000',
+  baseURL: 'https://monitering-system-client.vercel.app',
   headers: {
     'Content-Type': 'application/json',
   },
