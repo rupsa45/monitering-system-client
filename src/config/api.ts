@@ -3,7 +3,7 @@ import Cookies from 'js-cookie';
 
 export const API_CONFIG = {
 
-  baseURL: 'http://localhost:9000',
+  baseURL: 'https://employee-monitering-sys.onrender.com',
   headers: {
     'Content-Type': 'application/json',
   },
